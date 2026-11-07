@@ -10,3 +10,6 @@ desktop.ini
 *.swp
 *.swo
 *~
+
+# Local helper scripts (contains PAT prompt)
+push-to-github.ps1
