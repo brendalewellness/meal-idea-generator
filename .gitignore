@@ -1,0 +1,12 @@
+# WorkBuddy internal data
+.workbuddy-ai/
+
+# OS files
+Thumbs.db
+.DS_Store
+desktop.ini
+
+# Editor temp files
+*.swp
+*.swo
+*~
