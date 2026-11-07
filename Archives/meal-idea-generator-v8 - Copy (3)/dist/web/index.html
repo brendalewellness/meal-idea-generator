@@ -1,0 +1,3044 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Meal Idea Generator · 餐食灵感生成器</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;500;600;700&family=Source+Sans+Pro:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+/* ===================== 基础与主题 ===================== */
+:root{
+  --bg:#f6f5f1; --panel:#fff; --ink:#1f2421; --muted:#6b7570; --line:#e5e3dc;
+  --accent:#3f7d58; --accent-soft:#eaf1ec; --accent-ink:#2c5a3f;
+  --danger:#b4544a;
+  /* Brenda Le Wellness brand colors */
+  --brand-dark:#495a58;
+  --brand-coral:#d4967d;
+  --brand-cream:#dcd9d0;
+  --brand-soft:#f2efe9;
+  --r:12px; --sh:0 1px 2px rgba(31,36,33,.05), 0 6px 18px rgba(31,36,33,.06);
+  --font-heading:'Lora',Georgia,'Times New Roman',serif;
+  --font-body:'Source Sans Pro','Segoe UI','PingFang SC','Hiragino Sans GB','Microsoft YaHei',Roboto,Helvetica,Arial,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--bg); color:var(--ink);
+  font-family:var(--font-body);
+  font-size:14px; line-height:1.5; -webkit-font-smoothing:antialiased;
+}
+button{font:inherit;cursor:pointer;border:none;background:none;color:inherit}
+input,textarea,select{font:inherit;color:inherit}
+h1,h2,h3,h4{margin:0;font-weight:600;line-height:1.25}
+
+/* ===================== 顶栏 ===================== */
+.topbar{
+  position:sticky; top:0; z-index:40; background:rgba(255,255,255,.88);
+  backdrop-filter:saturate(1.6) blur(10px); border-bottom:1px solid var(--line);
+  display:flex; align-items:center; gap:12px; padding:11px 20px; flex-wrap:wrap;
+}
+.brand{display:flex; align-items:baseline; gap:9px}
+.brand b{font-size:16px; letter-spacing:-.2px}
+.brand span{font-size:11.5px; color:var(--muted); letter-spacing:.3px}
+.topbar .grow{flex:1}
+.client-in{
+  display:flex; align-items:center; gap:7px; background:var(--bg);
+  border:1px solid var(--line); border-radius:9px; padding:6px 11px;
+}
+.client-in label{font-size:12px; color:var(--muted); white-space:nowrap}
+.client-in input{border:none; background:transparent; outline:none; width:130px; font-weight:500}
+.btn{
+  border:1px solid var(--line); background:#fff; border-radius:9px; padding:7px 14px;
+  font-size:13px; font-weight:500; transition:.15s; white-space:nowrap;
+}
+.btn:hover{border-color:#cfcdc4; background:#fbfaf8}
+.btn.primary{background:var(--accent); border-color:var(--accent); color:#fff}
+.btn.primary:hover{background:#376f4d}
+.btn.brand-btn{background:var(--brand-dark); border-color:var(--brand-dark); color:#fff}
+.btn.brand-btn:hover{background:#3e4d4b}
+.btn.coral-btn{background:var(--brand-coral); border-color:var(--brand-coral); color:#fff}
+.btn.coral-btn:hover{background:#c98770}
+.btn.ghost{background:transparent; border-color:transparent; color:var(--muted)}
+.btn.ghost:hover{background:var(--bg); color:var(--ink)}
+.btn.lang{display:inline-flex; align-items:center; gap:6px; font-weight:600; padding:7px 13px}
+.btn.lang .globe{font-size:14px; line-height:1}
+
+/* ===================== 三栏布局 ===================== */
+.app{
+  display:grid; grid-template-columns:266px minmax(0,1fr) 330px;
+  gap:18px; padding:18px 20px 60px; align-items:start;
+  max-width:1560px; margin:0 auto;
+}
+@media (max-width:1240px){ .app{grid-template-columns:240px minmax(0,1fr)} .col-plan{grid-column:1/-1} }
+@media (max-width:880px){ .app{grid-template-columns:1fr} }
+.col{display:flex; flex-direction:column; gap:16px; min-width:0}
+.col-side{position:sticky; top:66px}
+.col-plan{position:sticky; top:66px; max-height:calc(100vh - 80px); overflow-y:auto}
+@media (max-width:1240px){ .col-plan{position:static; max-height:none} }
+@media (max-width:880px){ .col-side{position:static} }
+
+.card{background:var(--panel); border:1px solid var(--line); border-radius:var(--r); box-shadow:var(--sh)}
+.card-pad{padding:15px 16px}
+.card-h{
+  display:flex; align-items:center; justify-content:space-between; gap:10px;
+  padding:13px 16px; border-bottom:1px solid var(--line);
+}
+.card-h h3{font-size:13px; letter-spacing:.2px}
+.card-h .hint{font-size:11.5px; color:var(--muted); font-weight:400}
+
+/* ===================== 筛选器 ===================== */
+.fgroup{padding:14px 16px; border-bottom:1px solid var(--line)}
+.fgroup:last-child{border-bottom:none}
+.ftitle{
+  font-size:11px; text-transform:uppercase; letter-spacing:.7px; color:var(--muted);
+  font-weight:600; margin-bottom:9px; display:flex; align-items:center; gap:6px;
+}
+.chips{display:flex; flex-wrap:wrap; gap:7px}
+.chip{
+  border:1px solid var(--line); background:#fff; border-radius:999px;
+  padding:5px 11px; font-size:12.5px; color:#3d453f; transition:.13s; user-select:none;
+  display:inline-flex; align-items:center; gap:5px;
+}
+.chip:hover{border-color:#c9c7bd}
+.chip.on{background:var(--accent); border-color:var(--accent); color:#fff}
+.chip.on.warn{background:var(--danger); border-color:var(--danger)}
+.seg{display:flex; border:1px solid var(--line); border-radius:9px; overflow:hidden}
+.seg button{flex:1; padding:7px 6px; font-size:12.5px; background:#fff; color:#4a544e; transition:.13s}
+.seg button + button{border-left:1px solid var(--line)}
+.seg button.on{background:var(--accent); color:#fff}
+
+.matchbar{
+  padding:12px 16px; background:var(--accent-soft); display:flex; align-items:center;
+  justify-content:space-between; gap:8px; font-size:12.5px; color:var(--accent-ink);
+}
+.matchbar b{font-size:17px; font-weight:700}
+
+/* ===================== 菜品库 ===================== */
+.lib-head{display:flex; align-items:center; gap:8px; flex-wrap:wrap}
+.tabs{display:flex; gap:4px; background:var(--bg); border-radius:9px; padding:3px}
+.tabs button{
+  padding:6px 13px; border-radius:7px; font-size:12.5px; color:var(--muted); font-weight:500; transition:.13s;
+}
+.tabs button.on{background:#fff; color:var(--ink); box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.tabs button .n{font-size:11px; opacity:.6; margin-left:4px}
+
+.daypick{display:flex; align-items:center; gap:7px; font-size:12.5px; color:var(--muted); margin-left:auto}
+.daypick .seg button{padding:5px 12px; font-size:12.5px}
+
+.grid{
+  display:grid; grid-template-columns:repeat(auto-fill,minmax(196px,1fr));
+  gap:14px; padding:16px;
+}
+@media (max-width:880px){ .grid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:11px; padding:13px} }
+
+.meal{
+  border:1px solid var(--line); border-radius:11px; overflow:hidden; background:#fff;
+  display:flex; flex-direction:column; transition:.16s; position:relative;
+}
+.meal:hover{border-color:#cfcdc4; transform:translateY(-2px); box-shadow:0 8px 20px rgba(31,36,33,.09)}
+.meal.custom::after{
+  content:'✎'; position:absolute; top:6px; right:6px; z-index:3; font-size:10px;
+  background:var(--brand-coral); color:#fff; border-radius:50%; width:16px; height:16px;
+  display:grid; place-items:center; pointer-events:none;
+}
+.photo{position:relative; aspect-ratio:4/3; overflow:hidden; display:grid; place-items:center}
+.photo img{position:absolute; inset:0; width:100%; height:100%; object-fit:cover; display:block}
+.ph-emoji{font-size:42px; line-height:1; font-family:"Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",sans-serif}
+.photo .ph-emoji,.h-photo .ph-emoji,.rec-hero .ph-emoji,.lib-thumb .ph-emoji,.week-thumb .ph-emoji{
+  width:70px; height:70px; border-radius:50%; display:grid; place-items:center; font-size:34px;
+  background:rgba(255,255,255,.66); box-shadow:0 2px 10px rgba(31,36,33,.07);
+}
+.mini .thumb .ph-emoji{font-size:18px; width:30px; height:30px}
+.photo[data-type="breakfast"]{background:linear-gradient(140deg,#fdf4e7,#f7e3c6)}
+.photo[data-type="lunch"]{background:linear-gradient(140deg,#eaf1ec,#d8e8dc)}
+.photo[data-type="dinner"]{background:linear-gradient(140deg,#e9f1f6,#d3e2ed)}
+.photo[data-type="snack"]{background:linear-gradient(140deg,#fbeef3,#f5dbe5)}
+.typebadge{
+  position:absolute; top:8px; left:8px; z-index:2; font-size:10.5px; font-weight:600;
+  letter-spacing:.4px; padding:3px 8px; border-radius:6px; background:rgba(255,255,255,.92);
+  color:#3d453f; backdrop-filter:blur(4px);
+}
+.carbbadge{
+  position:absolute; top:8px; right:8px; z-index:2; font-size:10.5px; font-weight:600;
+  padding:3px 8px; border-radius:6px; background:rgba(31,36,33,.72); color:#fff;
+}
+.meal-body{padding:11px 12px 12px; display:flex; flex-direction:column; gap:8px; flex:1}
+.meal-name{font-size:13.5px; font-weight:600; line-height:1.3}
+.meal-alt{font-size:11.5px; color:var(--muted); margin-top:1px}
+.meal-meta{font-size:11.5px; color:var(--muted); display:flex; gap:9px; flex-wrap:wrap}
+.macro-mini{font-size:10px; color:var(--brand-dark); display:flex; gap:6px; flex-wrap:nowrap; white-space:nowrap; overflow:hidden}
+.macro-mini span{background:var(--brand-soft); padding:1px 5px; border-radius:4px; white-space:nowrap; flex-shrink:0}
+.tags{display:flex; flex-wrap:wrap; gap:4px}
+.tag{font-size:10.5px; padding:2px 7px; border-radius:5px; background:var(--bg); color:#5a645e; border:1px solid var(--line)}
+.tag.gut{background:#eaf5ee; border-color:#d3e8da; color:#2f6b48}
+.tag.asian{background:#fdf0ea; border-color:#f6dccf; color:#a4502c}
+.meal-actions{display:flex; gap:6px; margin-top:auto}
+.addbtn{
+  flex:1; border:1px solid var(--accent); background:var(--accent-soft); color:var(--accent-ink);
+  border-radius:8px; padding:6px; font-size:12px; font-weight:600; transition:.13s;
+}
+.addbtn:hover{background:var(--accent); color:#fff}
+.recbtn{
+  border:1px solid var(--line); background:#fff; border-radius:8px; padding:6px 10px;
+  font-size:12px; color:var(--muted); transition:.13s;
+}
+.recbtn:hover{border-color:#cfcdc4; color:var(--ink)}
+.empty{
+  padding:46px 24px; text-align:center; color:var(--muted); font-size:13px; line-height:1.7;
+}
+.empty .big{font-size:30px; display:block; margin-bottom:10px; opacity:.5}
+
+/* ===================== 计划栏 ===================== */
+.day{padding:13px 14px; border-bottom:1px solid var(--line)}
+.day:last-child{border-bottom:none}
+.day-h{display:flex; align-items:center; gap:8px; margin-bottom:10px}
+.day-h h4{font-size:13px}
+.day-h .day-title-edit{
+  font-size:13px; font-weight:600; border:1px solid transparent; border-radius:5px;
+  padding:2px 6px; background:transparent; outline:none; min-width:60px; flex:1;
+}
+.day-h .day-title-edit:hover{border-color:var(--line); background:var(--bg)}
+.day-h .day-title-edit:focus{border-color:var(--brand-coral); background:#fff}
+.day-h .cnt{font-size:11px; color:var(--muted); background:var(--bg); padding:2px 7px; border-radius:5px; white-space:nowrap}
+.day-h .sp{flex:1}
+.mini{
+  border:1px solid var(--line); border-radius:9px; padding:6px 7px; display:flex;
+  align-items:center; gap:9px; margin-bottom:7px; background:#fff; transition:.13s;
+}
+.mini:hover{border-color:#cfcdc4}
+.mini .thumb{
+  width:38px; height:38px; border-radius:7px; flex:none; overflow:hidden; position:relative;
+  display:grid; place-items:center; font-size:18px;
+}
+.mini .thumb img{position:absolute; inset:0; width:100%; height:100%; object-fit:cover}
+.mini .thumb[data-type="breakfast"]{background:linear-gradient(140deg,#fdf4e7,#f7e3c6)}
+.mini .thumb[data-type="lunch"]{background:linear-gradient(140deg,#eaf1ec,#d8e8dc)}
+.mini .thumb[data-type="dinner"]{background:linear-gradient(140deg,#e9f1f6,#d3e2ed)}
+.mini .thumb[data-type="snack"]{background:linear-gradient(140deg,#fbeef3,#f5dbe5)}
+.mini .t{flex:1; min-width:0}
+.mini .t b{display:block; font-size:12.5px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.mini .t span{font-size:10.5px; color:var(--muted)}
+.mini .x{color:#b8bdb9; font-size:15px; padding:3px 5px; border-radius:6px; line-height:1}
+.mini .x:hover{background:#f6ecea; color:var(--danger)}
+.dropzone{
+  border:1.5px dashed var(--line); border-radius:9px; padding:16px 10px; text-align:center;
+  color:#a8aeaa; font-size:11.5px; line-height:1.6;
+}
+.dropzone.over{border-color:var(--accent); background:var(--accent-soft); color:var(--accent-ink)}
+.notefield{width:100%; border:1px solid var(--line); border-radius:9px; padding:9px 10px; resize:vertical; min-height:64px; outline:none; font-size:12.5px}
+.notefield:focus{border-color:#bcc9c1}
+.optrow{display:flex; align-items:center; gap:8px; font-size:12.5px; color:#4a544e; cursor:pointer; padding:3px 0}
+.optrow input{accent-color:var(--accent); width:15px; height:15px}
+
+/* ===================== 食谱弹窗 ===================== */
+#modal,#libModal,#weekModal{position:fixed; inset:0; z-index:80; display:none; align-items:center; justify-content:center; padding:22px}
+#modal.open,#libModal.open,#weekModal.open{display:flex}
+#modal .veil,#libModal .veil,#weekModal .veil{position:absolute; inset:0; background:rgba(25,30,27,.5); backdrop-filter:blur(3px)}
+#modal .sheet,#libModal .sheet,#weekModal .sheet{
+  position:relative; background:#fff; border-radius:16px; max-width:760px; width:100%;
+  max-height:90vh; overflow:auto; box-shadow:0 30px 70px rgba(0,0,0,.3);
+}
+#libModal .sheet{max-width:900px}
+#weekModal .sheet{max-width:1400px; max-height:94vh}
+.rec-hero{position:relative; aspect-ratio:16/7; overflow:hidden; display:grid; place-items:center}
+.rec-hero img{position:absolute; inset:0; width:100%; height:100%; object-fit:cover}
+.rec-hero .ph-emoji{width:116px; height:116px; font-size:56px}
+.rec-hero[data-type="breakfast"]{background:linear-gradient(140deg,#fdf4e7,#f7e3c6)}
+.rec-hero[data-type="lunch"]{background:linear-gradient(140deg,#eaf1ec,#d8e8dc)}
+.rec-hero[data-type="dinner"]{background:linear-gradient(140deg,#e9f1f6,#d3e2ed)}
+.rec-hero[data-type="snack"]{background:linear-gradient(140deg,#fbeef3,#f5dbe5)}
+.rec-close,.modal-close{position:absolute; top:12px; right:12px; z-index:3; width:32px; height:32px; border-radius:50%; background:rgba(255,255,255,.92); display:grid; place-items:center; font-size:17px; color:#3d453f}
+.rec-close:hover,.modal-close:hover{background:#fff}
+.rec-body{padding:20px 24px 26px}
+.rec-body h2{font-size:21px; letter-spacing:-.3px; font-family:var(--font-heading)}
+.rec-body .alt{color:var(--muted); font-size:13px; margin-top:3px}
+.rec-meta{display:flex; gap:14px; flex-wrap:wrap; margin:13px 0; font-size:12.5px; color:var(--muted)}
+.rec-meta b{color:var(--ink); font-weight:600}
+.why{background:var(--accent-soft); border-left:3px solid var(--accent); padding:10px 13px; border-radius:0 9px 9px 0; font-size:13px; color:var(--accent-ink); margin:13px 0}
+.two{display:grid; grid-template-columns:1fr 1.35fr; gap:26px; margin-top:16px}
+@media (max-width:640px){ .two{grid-template-columns:1fr} }
+.sec-t{font-size:11px; text-transform:uppercase; letter-spacing:.7px; color:var(--muted); font-weight:700; margin-bottom:9px}
+.ing{list-style:none; padding:0; margin:0; font-size:13px}
+.ing li{padding:6px 0 6px 18px; border-bottom:1px dashed var(--line); position:relative}
+.ing li:before{content:""; position:absolute; left:2px; top:13px; width:5px; height:5px; border-radius:50%; background:var(--accent)}
+.steps{list-style:none; padding:0; margin:0; counter-reset:s; font-size:13px}
+.steps li{counter-increment:s; padding:0 0 12px 30px; position:relative}
+.steps li:before{
+  content:counter(s); position:absolute; left:0; top:0; width:20px; height:20px; border-radius:50%;
+  background:var(--accent); color:#fff; font-size:11px; font-weight:700; display:grid; place-items:center;
+}
+.notes{margin-top:16px; background:var(--bg); border-radius:9px; padding:11px 13px; font-size:12.5px; color:#4a544e}
+.notes b{color:var(--ink)}
+
+/* macro section in recipe modal */
+.macro-section{margin-top:16px; background:var(--brand-soft); border-radius:9px; padding:14px 16px}
+.macro-section .sec-t{color:var(--brand-dark)}
+.macro-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:12px}
+.macro-cell{text-align:center}
+.macro-cell .g{font-size:22px; font-weight:700; color:var(--brand-dark); font-family:var(--font-heading)}
+.macro-cell .g span{font-size:13px; font-weight:400; color:var(--muted)}
+.macro-cell .lbl{font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.5px; margin-top:4px}
+.macro-cell .pct{font-size:11px; color:var(--brand-coral); margin-top:2px}
+.macro-bar{height:5px; border-radius:3px; background:var(--brand-cream); margin-top:6px; overflow:hidden}
+.macro-bar .fill{height:100%; border-radius:3px}
+
+/* ===================== Recipe Library Editor ===================== */
+.lib-modal-body{padding:0}
+.lib-toolbar{display:flex; align-items:center; gap:10px; padding:14px 18px; border-bottom:1px solid var(--line); flex-wrap:wrap}
+.lib-toolbar h2{font-size:17px; font-family:var(--font-heading)}
+.lib-search{flex:1; min-width:180px; border:1px solid var(--line); border-radius:8px; padding:7px 11px; font-size:13px; outline:none}
+.lib-search:focus{border-color:var(--brand-coral)}
+.lib-list{padding:14px 18px; display:flex; flex-direction:column; gap:8px; max-height:60vh; overflow-y:auto}
+.lib-item{
+  display:flex; align-items:center; gap:12px; border:1px solid var(--line); border-radius:10px;
+  padding:8px 12px; transition:.13s; background:#fff;
+}
+.lib-item:hover{border-color:#cfcdc4; box-shadow:0 2px 8px rgba(0,0,0,.05)}
+.lib-thumb{
+  width:50px; height:50px; border-radius:8px; flex:none; overflow:hidden; position:relative;
+  display:grid; place-items:center; font-size:22px;
+}
+.lib-thumb img{position:absolute; inset:0; width:100%; height:100%; object-fit:cover}
+.lib-thumb[data-type="breakfast"]{background:linear-gradient(140deg,#fdf4e7,#f7e3c6)}
+.lib-thumb[data-type="lunch"]{background:linear-gradient(140deg,#eaf1ec,#d8e8dc)}
+.lib-thumb[data-type="dinner"]{background:linear-gradient(140deg,#e9f1f6,#d3e2ed)}
+.lib-thumb[data-type="snack"]{background:linear-gradient(140deg,#fbeef3,#f5dbe5)}
+.lib-item .info{flex:1; min-width:0}
+.lib-item .info b{font-size:13px; font-weight:600; display:block}
+.lib-item .info span{font-size:11px; color:var(--muted)}
+.lib-item .acts{display:flex; gap:5px}
+.lib-item .acts button{padding:5px 9px; font-size:11px; border-radius:6px; border:1px solid var(--line); background:#fff; transition:.13s}
+.lib-item .acts button:hover{border-color:#cfcdc4}
+.lib-item .acts .del:hover{background:#f6ecea; border-color:var(--danger); color:var(--danger)}
+
+/* recipe editor form */
+.rec-editor{padding:18px 22px 26px}
+.rec-editor h2{font-size:18px; font-family:var(--font-heading); margin-bottom:14px}
+.form-row{margin-bottom:13px}
+.form-row label{display:block; font-size:11px; text-transform:uppercase; letter-spacing:.5px; color:var(--muted); font-weight:600; margin-bottom:5px}
+.form-row input,.form-row textarea,.form-row select{
+  width:100%; border:1px solid var(--line); border-radius:8px; padding:8px 10px; font-size:13px; outline:none;
+}
+.form-row input:focus,.form-row textarea:focus,.form-row select:focus{border-color:var(--brand-coral)}
+.form-row textarea{resize:vertical; min-height:50px; font-family:inherit}
+.form-grid2{display:grid; grid-template-columns:1fr 1fr; gap:14px}
+.form-grid3{display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px}
+@media (max-width:560px){ .form-grid2,.form-grid3{grid-template-columns:1fr} }
+.tag-edit{display:flex; flex-wrap:wrap; gap:6px}
+.tag-edit .chip{font-size:11px; padding:3px 8px; cursor:pointer}
+.img-upload-area{
+  display:flex; align-items:center; gap:12px;
+}
+.img-preview{
+  width:80px; height:80px; border-radius:10px; border:1px solid var(--line); overflow:hidden;
+  display:grid; place-items:center; position:relative; flex:none; font-size:30px;
+}
+.img-preview img{position:absolute; inset:0; width:100%; height:100%; object-fit:cover}
+.img-upload-area .file-btn{
+  border:1px dashed var(--line); border-radius:8px; padding:8px 14px; font-size:12px; color:var(--muted);
+  cursor:pointer; transition:.13s;
+}
+.img-upload-area .file-btn:hover{border-color:var(--brand-coral); color:var(--brand-dark)}
+.macro-inputs{display:grid; grid-template-columns:repeat(4,1fr); gap:12px}
+@media (max-width:760px){ .macro-inputs{grid-template-columns:repeat(2,1fr)} }
+@media (max-width:480px){ .macro-inputs{grid-template-columns:1fr} }
+.macro-input-group{border:1px solid var(--line); border-radius:8px; padding:10px}
+.macro-input-group label{font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:.5px; margin-bottom:6px; display:block}
+.macro-input-group .fields{display:grid; grid-template-columns:1fr 1fr; gap:6px}
+.macro-input-group .field{display:flex; align-items:center; gap:4px}
+.macro-input-group .field span{font-size:10px; color:var(--muted); white-space:nowrap}
+.macro-input-group .field input{width:100%; padding:4px 6px; font-size:12px; border:1px solid var(--line); border-radius:5px}
+.micro-inputs{display:grid; grid-template-columns:repeat(3,1fr); gap:12px}
+@media (max-width:640px){ .micro-inputs{grid-template-columns:repeat(2,1fr)} }
+@media (max-width:420px){ .micro-inputs{grid-template-columns:1fr} }
+.micro-input-group{border:1px solid var(--line); border-radius:8px; padding:10px; background:var(--bg)}
+.micro-input-group label{font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:.5px; margin-bottom:6px; display:block}
+.micro-input-group .field input{width:100%; padding:4px 6px; font-size:12px; border:1px solid var(--line); border-radius:5px}
+
+/* ===================== 7-Day Plan Generator ===================== */
+.week-modal-body{padding:0}
+.week-config{padding:18px 24px; border-bottom:1px solid var(--line); display:flex; flex-wrap:wrap; gap:16px; align-items:flex-end}
+.week-config h2{font-size:19px; font-family:var(--font-heading); width:100%; margin-bottom:4px}
+.week-config .cfg{display:flex; flex-direction:column; gap:5px}
+.week-config .cfg label{font-size:10px; text-transform:uppercase; letter-spacing:.5px; color:var(--muted); font-weight:600}
+.week-config .cfg select,.week-config .cfg input{border:1px solid var(--line); border-radius:7px; padding:7px 10px; font-size:13px; outline:none}
+.week-config .meal-types{display:flex; gap:8px; flex-wrap:wrap}
+.week-config .meal-types label{font-size:13px; display:flex; align-items:center; gap:5px; cursor:pointer}
+.week-config .meal-types input{accent-color:var(--brand-dark); width:15px; height:15px}
+.week-grid-wrap{padding:14px 20px; overflow-x:auto}
+.week-grid{display:grid; gap:6px; min-width:920px}
+.week-grid .wg-row{display:grid; grid-template-columns:110px repeat(7,1fr); gap:6px}
+.week-grid .wg-head{
+  font-size:11px; text-transform:uppercase; letter-spacing:.4px; color:var(--muted); font-weight:700;
+  text-align:center; padding:5px;
+}
+.week-grid .wg-day-head{
+  font-size:13px; font-weight:700; color:var(--brand-coral); text-align:center; padding:5px;
+  border-bottom:2px solid var(--brand-coral);
+}
+.week-grid .wg-label{
+  font-size:11px; text-transform:uppercase; letter-spacing:.4px; color:var(--brand-dark); font-weight:700;
+  display:flex; align-items:center; padding:5px 8px;
+}
+.week-cell{
+  border:1px solid var(--line); border-radius:9px; padding:6px; min-height:120px; background:#fff;
+  display:flex; flex-direction:column; gap:4px; transition:.13s; cursor:pointer; position:relative;
+}
+.week-cell:hover{border-color:var(--brand-coral); box-shadow:0 2px 8px rgba(212,150,125,.18)}
+.week-cell.over{border-color:var(--brand-coral); background:var(--brand-soft)}
+.week-cell.empty-cell{background:var(--bg); display:grid; place-items:center; color:#c0c5c0; font-size:18px; min-height:120px}
+.week-cell .wc-meal{display:flex; flex-direction:column; gap:4px; font-size:12px; line-height:1.3; height:100%}
+.week-cell .wc-meal .week-thumb{
+  width:100%; aspect-ratio:4/3; border-radius:7px; flex:none; overflow:hidden; position:relative;
+  display:grid; place-items:center; font-size:28px;
+}
+.week-cell .wc-meal .week-thumb img{position:absolute; inset:0; width:100%; height:100%; object-fit:cover}
+.week-cell .wc-meal .week-thumb[data-type="breakfast"]{background:linear-gradient(140deg,#fdf4e7,#f7e3c6)}
+.week-cell .wc-meal .week-thumb[data-type="lunch"]{background:linear-gradient(140deg,#eaf1ec,#d8e8dc)}
+.week-cell .wc-meal .week-thumb[data-type="dinner"]{background:linear-gradient(140deg,#e9f1f6,#d3e2ed)}
+.week-cell .wc-meal .week-thumb[data-type="snack"]{background:linear-gradient(140deg,#fbeef3,#f5dbe5)}
+.week-cell .wc-meal b.wc-name{font-size:12px; font-weight:600; line-height:1.3; min-width:0; color:var(--ink); word-break:break-word}
+.week-cell .wc-meal b.wc-name .wl{display:block}
+.week-cell .wc-meal .wc-x{position:absolute; top:4px; right:4px; color:#fff; background:rgba(0,0,0,.35); border-radius:50%; width:20px; height:20px; display:grid; place-items:center; font-size:12px; flex:none; z-index:2}
+.week-cell .wc-meal .wc-x:hover{color:#fff; background:rgba(0,0,0,.55)}
+.week-actions{padding:16px 24px; border-top:1px solid var(--line); display:flex; gap:10px; justify-content:flex-end; flex-wrap:wrap}
+
+/* Saved plan dialogs */
+.wk-save-bar{display:flex; gap:8px; align-items:center; padding:12px 24px; border-top:1px solid var(--line); background:var(--bg); flex-wrap:wrap}
+.wk-save-bar input{flex:1; min-width:200px; border:1px solid var(--line); border-radius:8px; padding:8px 12px; font-size:14px; color:var(--ink); background:#fff}
+.wk-save-bar input:focus{outline:none; border-color:var(--brand-coral)}
+.wk-plans-overlay{position:fixed; inset:0; background:rgba(0,0,0,.35); z-index:1000; display:flex; align-items:center; justify-content:center; padding:20px}
+.wk-plans-modal{background:#fff; border-radius:14px; max-width:560px; width:100%; max-height:80vh; display:flex; flex-direction:column; box-shadow:0 8px 40px rgba(0,0,0,.2)}
+.wk-plans-head{display:flex; align-items:center; justify-content:space-between; padding:18px 22px; border-bottom:1px solid var(--line)}
+.wk-plans-head h3{margin:0; font-size:18px; color:var(--brand-dark); font-family:var(--font-heading)}
+.wk-plans-body{overflow-y:auto; padding:12px 22px; flex:1}
+.wk-plan-item{display:flex; align-items:center; justify-content:space-between; padding:12px 14px; border:1px solid var(--line); border-radius:10px; margin-bottom:8px; transition:.13s}
+.wk-plan-item:hover{border-color:var(--brand-coral); background:var(--brand-soft)}
+.wk-plan-info{flex:1; min-width:0}
+.wk-plan-name{font-weight:600; font-size:14px; color:var(--ink); margin-bottom:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.wk-plan-date{font-size:11px; color:var(--muted)}
+.wk-plan-actions{display:flex; gap:6px; flex:none}
+.wk-plan-actions .btn-sm{padding:5px 12px; font-size:12px; border-radius:7px; border:1px solid var(--line); background:#fff; cursor:pointer; transition:.13s}
+.wk-plan-actions .btn-sm:hover{border-color:var(--brand-coral)}
+.wk-plan-actions .btn-sm.danger:hover{background:#fee; border-color:#e88; color:#c44}
+.wk-plan-actions .btn-sm.primary{background:var(--brand-coral); color:#fff; border-color:var(--brand-coral)}
+.wk-plans-empty{text-align:center; padding:40px 20px; color:var(--muted); font-size:14px}
+.week-day-totals{padding:0 24px 12px; font-size:11px; color:var(--muted)}
+.week-day-totals .wdt-row{display:grid; grid-template-columns:110px repeat(7,1fr); gap:6px; margin-top:4px}
+.week-day-totals .wdt-cell{text-align:center; padding:4px; font-size:12px}
+.week-day-totals .wdt-label{font-weight:700; color:var(--brand-dark); font-size:12px}
+.week-day-totals .wdt-thead .wdt-thcell{font-weight:700; color:var(--brand-coral); font-size:11px; border-bottom:2px solid var(--brand-cream); padding-bottom:4px; margin-bottom:2px}
+
+/* Week meal picker grid */
+.wk-pick-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); gap:12px; max-height:55vh; overflow-y:auto; padding:4px}
+.wk-pick-card{cursor:pointer; border:1px solid var(--line); border-radius:9px; overflow:hidden; transition:.13s; background:#fff}
+.wk-pick-card:hover{border-color:var(--brand-coral); box-shadow:0 2px 10px rgba(212,150,125,.2); transform:translateY(-1px)}
+.wk-pick-thumb{position:relative; aspect-ratio:4/3; overflow:hidden; display:grid; place-items:center}
+.wk-pick-thumb img{position:absolute; inset:0; width:100%; height:100%; object-fit:cover}
+.wk-pick-thumb[data-type="breakfast"]{background:linear-gradient(140deg,#fdf4e7,#f7e3c6)}
+.wk-pick-thumb[data-type="lunch"]{background:linear-gradient(140deg,#eaf1ec,#d8e8dc)}
+.wk-pick-thumb[data-type="dinner"]{background:linear-gradient(140deg,#e9f1f6,#d3e2ed)}
+.wk-pick-thumb[data-type="snack"]{background:linear-gradient(140deg,#fbeef3,#f5dbe5)}
+.wk-pick-name{font-size:12px; font-weight:600; padding:6px 8px 2px; line-height:1.3; color:var(--ink); overflow:hidden; text-overflow:ellipsis; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical}
+.wk-pick-meta{font-size:10px; color:var(--muted); padding:0 8px 8px}
+
+/* Split view: two meals in one cell */
+.week-cell .wc-split{display:flex; gap:3px; height:100%}
+.week-cell .wc-split .wc-meal{flex:1; min-width:0; display:flex; flex-direction:column; gap:3px; font-size:11px; line-height:1.25; position:relative}
+.week-cell .wc-split .wc-meal .week-thumb{width:100%; aspect-ratio:4/3; border-radius:5px; flex:none; overflow:hidden; position:relative; display:grid; place-items:center; font-size:22px}
+.week-cell .wc-split .wc-meal .week-thumb img{position:absolute; inset:0; width:100%; height:100%; object-fit:cover}
+.week-cell .wc-split .wc-meal b.wc-name{font-size:10.5px; font-weight:600; line-height:1.2; min-width:0; color:var(--ink); word-break:break-word}
+/* Serving size input */
+.wc-serv-row{display:flex; align-items:center; gap:3px; font-size:10px; color:var(--muted); margin-top:2px}
+.wc-serv-row label{white-space:nowrap}
+.wc-serv-input{width:34px; border:1px solid var(--line); border-radius:4px; padding:1px 3px; font-size:10px; text-align:center; background:#fff; color:var(--ink)}
+.wc-serv-input:focus{outline:none; border-color:var(--brand-coral)}
+.wc-name-sm{font-size:10.5px !important}
+/* Add-second button */
+.wc-add2nd{position:absolute; bottom:3px; right:3px; z-index:2; width:20px; height:20px; border-radius:50%; background:var(--brand-soft); border:1px solid var(--brand-cream); display:grid; place-items:center; font-size:13px; color:var(--brand-coral); cursor:pointer; line-height:1}
+.wc-add2nd:hover{background:var(--brand-coral); color:#fff}
+/* Back button in picker */
+.wk-pick-back{display:inline-flex; align-items:center; gap:6px; font-size:13px; font-weight:500; color:var(--brand-dark); cursor:pointer; margin-bottom:10px; padding:5px 12px; border:1px solid var(--line); border-radius:8px; background:#fff}
+.wk-pick-back:hover{border-color:var(--brand-coral); background:var(--brand-soft)}
+/* Micronutrient selector */
+.wk-micro-sel{display:flex; flex-wrap:wrap; gap:5px}
+.wk-micro-sel label{font-size:12px; display:flex; align-items:center; gap:4px; cursor:pointer; padding:3px 8px; border:1px solid var(--line); border-radius:6px; background:#fff}
+.wk-micro-sel input{accent-color:var(--brand-dark); width:14px; height:14px}
+/* Micronutrient totals */
+.week-day-totals .wdt-micro{font-size:10px; color:var(--muted)}
+.week-day-totals .wdt-micro .wdt-cell{font-size:11px}
+
+/* ===================== 讲义（屏幕隐藏，打印显示） ===================== */
+#handout,#recipeSheet,#weekSheet{display:none}
+#handout .h-page{padding:0 0 26px}
+
+/* branding header */
+#handout .h-head{
+  display:flex; align-items:center; gap:16px; padding-bottom:16px; margin-bottom:22px;
+  border-bottom:2.5px solid var(--brand-coral);
+}
+#handout .h-logo{flex:none}
+#handout .h-logo img{height:55px; width:auto; display:block}
+#handout .h-brand-text{flex:1}
+#handout .h-practice{font-size:18px; color:var(--brand-coral); font-weight:600; font-family:var(--font-heading)}
+#handout .h-credential{font-size:13px; color:var(--muted); margin-top:2px}
+#handout .h-title{font-size:22px; letter-spacing:-.3px; margin:8px 0 3px; font-family:var(--font-heading); color:var(--brand-dark)}
+#handout .h-sub{font-size:13px; color:var(--muted)}
+#handout .h-note{margin-top:14px; background:var(--brand-soft); border-radius:9px; padding:14px 18px; font-size:20px; color:var(--brand-dark); border-left:3px solid var(--brand-coral); line-height:1.5}
+#handout .h-day{font-size:24px; margin:18px 0 10px; padding-bottom:6px; border-bottom:1px solid var(--brand-cream); display:flex; align-items:baseline; gap:10px; font-family:var(--font-heading); color:var(--brand-dark); break-after:avoid; page-break-after:avoid}
+#handout .h-day .cnt{font-size:11px; color:var(--muted); font-weight:400; font-family:var(--font-body)}
+#handout .h-day-macros{margin-left:auto; font-size:16px; color:var(--muted); font-family:var(--font-body); font-weight:400}
+#handout .h-grid{display:grid; grid-template-columns:1fr 1fr; gap:14px}
+#handout .h-meal{border:1px solid var(--line); border-radius:11px; overflow:hidden; break-inside:avoid; page-break-inside:avoid}
+#handout .h-photo{position:relative; aspect-ratio:5/3; overflow:hidden; display:grid; place-items:center}
+#handout .h-photo img{position:absolute; inset:0; width:100%; height:100%; object-fit:cover}
+#handout .h-photo[data-type="breakfast"]{background:linear-gradient(140deg,#fdf4e7,#f7e3c6)}
+#handout .h-photo[data-type="lunch"]{background:linear-gradient(140deg,#eaf1ec,#d8e8dc)}
+#handout .h-photo[data-type="dinner"]{background:linear-gradient(140deg,#e9f1f6,#d3e2ed)}
+#handout .h-photo[data-type="snack"]{background:linear-gradient(140deg,#fbeef3,#f5dbe5)}
+#handout .h-photo .ph-emoji{width:64px; height:64px; font-size:32px}
+#handout .h-mb{padding:10px 12px 12px}
+#handout .h-mb .n{font-size:21px; font-weight:700; font-family:var(--font-heading); color:var(--brand-dark); line-height:1.25}
+#handout .h-mb .z{font-size:16px; color:var(--muted); line-height:1.35}
+#handout .h-mb .w{font-size:18px; color:#4a544e; margin-top:5px; line-height:1.4}
+#handout .h-mb .ing{font-size:16px; color:var(--muted); margin-top:5px; line-height:1.4}
+#handout .h-mb .h-macros{margin-top:7px}
+#handout .h-mb .h-macros .m-tag{font-size:15px; background:var(--brand-soft); color:var(--brand-dark); padding:4px 8px; border-radius:5px; font-weight:600; white-space:nowrap; display:inline-block}
+#handout .h-focus{margin-top:6px; display:flex; gap:4px; flex-wrap:wrap}
+#handout .h-focus .f-tag{font-size:9px; background:var(--brand-coral); color:#fff; padding:1px 6px; border-radius:4px; text-transform:uppercase; letter-spacing:.3px}
+#handout .h-recipes-grid{display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:12px}
+#handout .h-recipe{break-inside:avoid; page-break-inside:avoid; border:1px solid var(--line); border-radius:11px; padding:12px 14px; margin-bottom:0}
+#handout .h-recipe-top{display:flex; gap:12px; align-items:flex-start; margin-bottom:5px}
+#handout .h-recipe-photo{flex:none; width:135px; aspect-ratio:1/1; position:relative; overflow:hidden; border-radius:8px; display:grid; place-items:center}
+#handout .h-recipe-photo img{position:absolute; inset:0; width:100%; height:100%; object-fit:cover}
+#handout .h-recipe-photo .ph-emoji{width:68px; height:68px; font-size:36px}
+#handout .h-recipe-photo[data-type="breakfast"]{background:linear-gradient(140deg,#fdf4e7,#f7e3c6)}
+#handout .h-recipe-photo[data-type="lunch"]{background:linear-gradient(140deg,#eaf1ec,#d8e8dc)}
+#handout .h-recipe-photo[data-type="dinner"]{background:linear-gradient(140deg,#e9f1f6,#d3e2ed)}
+#handout .h-recipe-photo[data-type="snack"]{background:linear-gradient(140deg,#fbeef3,#f5dbe5)}
+#handout .h-recipe-head{flex:1; min-width:0}
+#handout .h-recipe h4{font-size:31px; font-family:var(--font-heading); color:var(--brand-dark); line-height:1.25; margin:0}
+#handout .h-recipe-meta{font-size:20px; color:var(--muted); font-weight:400; font-family:var(--font-body); margin-top:3px}
+#handout .h-recipe .sec-t{font-size:19px; margin-bottom:6px}
+#handout .h-recipe .cols{display:block; margin-top:9px}
+#handout .h-recipe .cols > div{margin-bottom:9px}
+#handout .h-recipe .ing{font-size:20px; line-height:1.4}
+#handout .h-recipe .ing li{padding:3px 0 3px 20px}
+#handout .h-recipe .ing li:before{top:9px; width:6px; height:6px}
+#handout .h-recipe .steps{font-size:20px; line-height:1.4}
+#handout .h-recipe .steps li{padding:0 0 6px 30px}
+#handout .h-recipe .steps li:before{width:20px;height:20px;font-size:10px}
+#handout .h-recipe .r-macros{margin-top:9px; display:flex; gap:10px; font-size:16px; color:var(--muted); flex-wrap:nowrap; white-space:nowrap}
+#handout .h-recipe .r-macros b{color:var(--brand-dark); font-weight:700}
+#handout .h-foot{
+  margin-top:26px; padding-top:12px; border-top:1px solid var(--brand-cream); font-size:14px;
+  color:var(--muted); text-align:center; display:flex; justify-content:center; gap:8px; align-items:center;
+}
+#handout .h-foot img{height:18px; width:auto}
+
+/* ===================== 打印 ===================== */
+@media print{
+  @page{ size:letter; margin:12mm 12mm 14mm; }
+  body{background:#fff; font-size:14px; font-family:var(--font-body); -webkit-print-color-adjust:exact; print-color-adjust:exact}
+  *{-webkit-print-color-adjust:exact; print-color-adjust:exact}
+  .app,.topbar,#modal,#libModal,#weekModal,.screen-only{display:none !important}
+  #handout{display:block !important}
+  body.mode-recipe #handout{display:none !important}
+  body.mode-recipe #recipeSheet{display:block !important}
+  body.mode-week #handout{display:none !important}
+  body.mode-week #weekSheet{display:block !important}
+  #recipeSheet .r-head{
+    display:flex; align-items:center; gap:16px; padding-bottom:14px; margin-bottom:18px;
+    border-bottom:2.5px solid var(--brand-coral);
+  }
+  #recipeSheet .r-logo{flex:none}
+  #recipeSheet .r-logo img{height:48px; width:auto}
+  #recipeSheet .r-brand-text{flex:1}
+  #recipeSheet .r-brand-text .pn{font-size:16px; color:var(--brand-coral); font-weight:600; font-family:var(--font-heading)}
+  #recipeSheet .r-brand-text .cr{font-size:12px; color:var(--muted)}
+  #recipeSheet .r-head h1{font-size:28px; margin:6px 0 3px; font-family:var(--font-heading); color:var(--brand-dark)}
+  #recipeSheet .r-head .z{font-size:14px; color:var(--muted)}
+  #recipeSheet .r-meta{display:flex; gap:16px; font-size:13px; color:var(--muted); margin:14px 0}
+  #recipeSheet .two{display:grid; grid-template-columns:1fr 1.4fr; gap:26px; margin-top:18px}
+  #recipeSheet .sec-t{font-size:12px}
+  #recipeSheet .ing li,#recipeSheet .steps li{font-size:13px}
+  #recipeSheet .why{background:#f2f6f3; border-left:3px solid var(--brand-coral); padding:10px 14px; font-size:13px; margin:14px 0; color:var(--brand-dark)}
+  #recipeSheet .notes{background:#f7f6f3; padding:12px 14px; font-size:12px; margin-top:16px}
+  #recipeSheet .r-macros{display:flex; gap:18px; margin-top:16px; font-size:13px; color:var(--muted)}
+  #recipeSheet .r-macros b{color:var(--brand-dark)}
+  #recipeSheet .r-foot{margin-top:24px; padding-top:12px; border-top:1px solid var(--brand-cream); font-size:11px; color:var(--muted); text-align:center}
+  .h-page{break-after:page}
+  .h-day-break{break-before:page}
+  .h-first-day{break-before:avoid}
+  .h-recipes-start{break-before:page}
+
+  /* 7-day plan print */
+  #weekSheet{font-family:var(--font-body)}
+  #weekSheet .ws-head{
+    display:flex; align-items:center; gap:12px; padding-bottom:6px; margin-bottom:6px;
+    border-bottom:2.5px solid var(--brand-coral);
+  }
+  #weekSheet .ws-logo{flex:none}
+  #weekSheet .ws-logo img{height:40px; width:auto}
+  #weekSheet .ws-brand-text .pn{font-size:15px; color:var(--brand-coral); font-weight:600; font-family:var(--font-heading)}
+  #weekSheet .ws-title{font-size:20px; font-family:var(--font-heading); color:var(--brand-dark); margin:2px 0 1px}
+  #weekSheet .ws-sub{font-size:11px; color:var(--muted)}
+  #weekSheet .ws-grid{display:grid; gap:2px; width:100%; margin-top:6px}
+  #weekSheet .ws-row{display:grid; grid-template-columns:26px repeat(7,1fr); gap:2px}
+  #weekSheet .ws-dh{font-size:12px; font-weight:700; color:var(--brand-dark); text-align:center; padding:3px; border-bottom:2px solid var(--brand-cream); font-family:var(--font-heading)}
+  #weekSheet .ws-ml{font-size:10px; text-transform:uppercase; letter-spacing:.3px; color:var(--muted); font-weight:600; writing-mode:vertical-rl; transform:rotate(180deg); display:flex; align-items:center; justify-content:center; padding:2px 0; height:100%}
+  #weekSheet .ws-cell{border:1px solid var(--line); border-radius:4px; padding:4px; min-height:156px; font-size:12px; line-height:1.3; break-inside:avoid; overflow:hidden; display:flex; flex-direction:column}
+  #weekSheet .ws-cell .ws-img{position:relative; flex:1 1 0; min-height:0; overflow:hidden; border-radius:4px; margin-bottom:4px; display:grid; place-items:center}
+  #weekSheet .ws-cell .ws-img img{position:absolute; inset:0; width:100%; height:100%; object-fit:cover}
+  #weekSheet .ws-cell .ws-img .ph-emoji{font-size:28px}
+  #weekSheet .ws-cell .ws-mn{font-weight:700; color:var(--brand-dark); margin-bottom:2px; font-size:12px; line-height:1.25; flex-shrink:0}
+  #weekSheet .ws-cell .ws-mn .wl{display:block}
+  #weekSheet .ws-cell .ws-mm{font-size:10px; color:var(--muted); line-height:1.2; flex-shrink:0}
+  #weekSheet .ws-totals{margin-top:14px; font-size:12px}
+  #weekSheet .ws-totals .ws-trow{display:grid; grid-template-columns:80px repeat(7,1fr); gap:3px}
+  #weekSheet .ws-totals .ws-tlabel{font-weight:700; color:var(--brand-dark); padding:5px}
+  #weekSheet .ws-totals .ws-tcell{text-align:center; padding:5px; color:var(--muted)}
+  #weekSheet .ws-totals .ws-thead .ws-thcell{text-align:center; padding:4px; font-weight:700; color:var(--brand-coral); font-family:var(--font-heading); border-bottom:2px solid var(--brand-cream); margin-bottom:4px}
+  #weekSheet .ws-foot{margin-top:20px; padding-top:10px; border-top:1px solid var(--brand-cream); font-size:11px; color:var(--muted); text-align:center}
+}
+</style>
+</head>
+<body>
+
+<!-- ===================== 应用界面 ===================== -->
+<div class="topbar screen-only">
+  <div class="brand"><b>Meal Idea Generator</b><span id="brandSub">餐食灵感生成器 · 原型</span></div>
+  <div class="client-in">
+    <label id="lblClient">客户</label>
+    <input id="clientName" autocomplete="off">
+  </div>
+  <div class="grow"></div>
+  <button class="btn" id="btnLib"></button>
+  <button class="btn coral-btn" id="btnWeek"></button>
+  <button class="btn" id="btnDemo"></button>
+  <button class="btn" id="btnPreview"></button>
+  <button class="btn" id="btnReset"></button>
+  <button class="btn primary" id="btnPdf"></button>
+  <button class="btn lang" id="btnLang" title="Switch language / 切换语言">
+    <span class="globe">🌐</span><span id="langLabel">EN</span>
+  </button>
+</div>
+
+<div class="app screen-only">
+
+  <!-- ---------- 左：偏好 ---------- -->
+  <aside class="col col-side">
+    <div class="card">
+      <div class="card-h"><h3 id="tPrefs"></h3><span class="hint" id="tClickFilter"></span></div>
+
+      <div class="fgroup">
+        <div class="ftitle" id="tCarb"></div>
+        <div class="seg" id="carbSeg">
+          <button data-carb="any" id="tCarbAny"></button>
+          <button data-carb="low" id="tCarbLow"></button>
+          <button data-carb="moderate" id="tCarbMod"></button>
+        </div>
+      </div>
+
+      <div class="fgroup">
+        <div class="ftitle" id="tFocus"></div>
+        <div class="chips" id="focusChips"></div>
+      </div>
+
+      <div class="fgroup">
+        <div class="ftitle" id="tDiet"></div>
+        <div class="chips" id="dietChips"></div>
+      </div>
+
+      <div class="fgroup">
+        <div class="ftitle" id="tAvoid"></div>
+        <div class="chips" id="avoidChips"></div>
+      </div>
+
+      <div class="matchbar">
+        <span id="tMatching"></span>
+        <span><b id="matchN">0</b> <span style="font-size:11.5px" id="tUnit"></span></span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ---------- 中：菜品库 ---------- -->
+  <main class="col">
+    <div class="card">
+      <div class="card-h lib-head">
+        <div class="tabs" id="typeTabs"></div>
+        <div class="daypick">
+          <span id="tAddTo"></span>
+          <div class="seg" id="daySeg">
+            <button data-day="1"></button>
+            <button data-day="2"></button>
+            <button data-day="3"></button>
+          </div>
+        </div>
+      </div>
+      <div class="grid" id="libGrid"></div>
+    </div>
+  </main>
+
+  <!-- ---------- 右：计划 ---------- -->
+  <aside class="col col-plan">
+    <div class="card">
+      <div class="card-h">
+        <h3 id="tPlanTitle"></h3>
+        <button class="btn ghost" id="btnAuto" style="font-size:12px;padding:4px 8px"></button>
+      </div>
+      <div id="planBody"></div>
+      <div class="card-pad" style="border-top:1px solid var(--line)">
+        <div class="ftitle" id="tNoteTitle"></div>
+        <textarea class="notefield" id="clientNote"></textarea>
+        <label class="optrow" style="margin-top:11px">
+          <input type="checkbox" id="optRecipes" checked>
+          <span id="tOptRecipes"></span>
+        </label>
+        <label class="optrow">
+          <input type="checkbox" id="optMacros">
+          <span id="tOptMacros"></span>
+        </label>
+      </div>
+    </div>
+  </aside>
+</div>
+
+<!-- ===================== 食谱弹窗 ===================== -->
+<div id="modal" class="screen-only">
+  <div class="veil" data-close></div>
+  <div class="sheet" id="modalSheet"></div>
+</div>
+
+<!-- ===================== Recipe Library Editor Modal ===================== -->
+<div id="libModal" class="screen-only">
+  <div class="veil" data-lib-close></div>
+  <div class="sheet" id="libSheet"></div>
+</div>
+
+<!-- ===================== 7-Day Plan Generator Modal ===================== -->
+<div id="weekModal" class="screen-only">
+  <div class="veil" data-week-close></div>
+  <div class="sheet" id="weekSheetModal"></div>
+</div>
+
+<!-- ===================== 打印：讲义 ===================== -->
+<div id="handout"></div>
+
+<!-- ===================== 打印：单份食谱 ===================== -->
+<div id="recipeSheet"></div>
+
+<!-- ===================== 打印：7天计划 ===================== -->
+<div id="weekSheet"></div>
+
+<script src="data/meals.js"></script>
+<script src="data/new-recipes.js"></script>
+<script src="data/micronutrients.js"></script>
+<script>
+/* ============================================================
+   Meal Idea Generator · 餐食灵感生成器
+   ============================================================ */
+
+/* ---------------- 合并菜品库 ---------------- */
+const BASE_MEALS = (window.MEALS || []).concat(window.NEW_RECIPES || []);
+
+/* ---------------- 多语言文案 ---------------- */
+const I18N = {
+  zh: {
+    docTitle: 'Meal Idea Generator · 餐食灵感生成器',
+    brandSub: '餐食灵感生成器 · 原型',
+    client: '客户', clientPh: '客户姓名',
+    demo: '载入示例', preview: '预览讲义', reset: '清空计划', exportPdf: '导出 PDF 讲义',
+    recipeLib: '食谱库管理', weekGen: '7天计划生成器',
+    langLabel: 'EN',
+    prefs: '客户偏好', clickFilter: '点击筛选',
+    carb: '碳水档位', carbAny: '不限', carbLow: '低碳', carbMod: '中碳',
+    focus: '调理方向', diet: '饮食类型', avoid: '必须不含（忌口）',
+    matching: '符合条件', unit: '道',
+    addTo: '加入',
+    planTitle: '今日计划', autoFill: '一键填充', clear: '清空',
+    noteTitle: '给客户的备注',
+    notePh: '例如：先从这 3 天开始试，觉得哪道菜顺手我们下次加进来。',
+    optRecipes: '讲义末尾附上完整食谱',
+    optMacros: '讲义中显示每餐营养素',
+    day: n => `第 ${n} 天`,
+    dayLabel: n => `第 ${n} 天`,
+    addBtn: n => `＋ 加入第 ${n} 天`,
+    recipe: '食谱', recipeTitle: '查看食谱',
+    dropHint: '拖拽菜品到这里<br>或点击左侧「＋」加入',
+    empty: '没有符合当前条件的菜品。<br>试着放宽某个筛选条件，或往菜品库里添加新菜。',
+    tabs: { all:'全部', breakfast:'早餐', lunch:'午餐', dinner:'晚餐', snack:'加餐' },
+    type: { breakfast:'早餐', lunch:'午餐', dinner:'晚餐', snack:'加餐',
+            'morning-snack':'上午加餐', 'afternoon-snack':'下午加餐', 'night-snack':'夜宵' },
+    carbName: { low:'低碳', moderate:'中碳' },
+    tag: { 'gut-healing':'肠道修复','asian':'亚洲风味','quick-easy':'快手','no-cook':'免烹',
+           'batch-cook':'批量预制','high-protein':'高蛋白','vegetarian':'素食','vegan':'纯素','gluten-free':'无麸质' },
+    tagShort: { 'gut-healing':'肠道修复', 'asian':'亚洲' },
+    contains: { dairy:'乳制品', gluten:'麸质', nuts:'坚果', egg:'蛋', soy:'大豆',
+                fish:'鱼', shellfish:'贝类', sesame:'芝麻' },
+    containsTag: c => `含${I18N.zh.contains[c]}`,
+    ingredients: '食材', method: '做法', notesLabel: '备注：', servingsUnit: ' 份',
+    macrosLabel: '每份营养素', protein: '蛋白质', fat: '脂肪', netCarbs: '净碳水', carbs: '碳水', calories: '热量',
+    grams: '克', dayTotal: '当日合计',
+    printRecipe: '打印这份食谱', addToDay: n => `加入第 ${n} 天`, editRecipe: '编辑食谱',
+    rKicker: 'Recipe · 食谱', rMetaType: '餐次：', rMetaCarb: '碳水：',
+    rMetaTime: '时间：', rMetaServ: '份量：',
+    hKicker: 'Personalized Meal Ideas',
+    hTitle: n => `${n} 的餐食灵感`,
+    hSub: (n,d) => `为 ${n} 量身挑选 · ${d}`,
+    hDay: n => `第 ${n} 天`, hItems: n => `${n} 道`,
+    hRecipes: '附：完整食谱',
+    hEmpty: '尚未选择任何餐食。在左侧菜品库中点击「＋」加入计划。',
+    hFoot: '本讲义为个性化餐食建议',
+    defaultClient: '客户',
+    dateLocale: 'zh-CN',
+    tAdded: (d,n) => `已加入第 ${d} 天：${n}`,
+    tNoMatch: '当前筛选下没有可用菜品',
+    tFilled: d => `已用符合条件的最优搭配填充第 ${d} 天`,
+    tNeedMeal: '请先往计划里加入至少一道菜',
+    tCleared: '已清空计划',
+    tDemo: '已载入示例客户 Sarah',
+    tPopup: '浏览器拦截了新窗口，请允许弹窗',
+    tLang: '已切换到中文',
+    demoNote: '先从这几天的搭配试起，哪道菜顺手我们下次再多加几道。',
+    previewTitle: '讲义预览',
+    /* recipe library */
+    libTitle: '食谱库管理', libSearch: '搜索菜品…', libAdd: '＋ 新增菜品',
+    libEdit: '编辑', libDelete: '删除', libBack: '返回列表',
+    libSave: '保存', libCancel: '取消',
+    libConfirmDel: '确定删除这道菜品吗？此操作不可撤销。',
+    libSaved: '已保存', libDeleted: '已删除菜品', libAdded: '已新增菜品',
+    recName: '菜品名称（中文）', recNameEn: '菜品名称（英文）', recType: '餐次类型',
+    recTypeHint: '可多选 · 一道菜可以同时属于多个类别',
+    recTypeRequired: '至少需要选择一个餐次类别',
+    recCarb: '碳水档位', recTime: '烹饪时间', recServ: '份量',
+    recWhy: '推荐理由', recIngredients: '食材（每行一项）', recSteps: '步骤（每行一步）',
+    recNotes: '备注', recEmoji: 'Emoji 图标', recImage: '菜品图片',
+    recImageHint: '点击上传图片（JPG/PNG）', recImageClear: '清除图片',
+    recTags: '标签（点击切换）', recContains: '含过敏原（点击切换）',
+    recFocus: 'Focus 标签（显示用，可自定义）', recFocusHint: '每行一个标签',
+    recMacros: '每份营养素', recMacroG: '克', recMacroPct: '%',
+    recCaloriesLabel: '热量（手动覆盖）', recCaloriesPh: '自动',
+    recCaloriesHint: '留空则按蛋白/脂肪/碳水自动计算',
+    recMicros: '每份微量营养素（可在 PDF 中显示）', recMicrosHint: '每份的数值；缺省沿用菜品库的默认估算',
+    recNewId: '新增菜品',
+    /* 7-day plan */
+    weekTitle: '7 天餐计划生成器', weekGenerate: '自动生成', weekExport: '导出 PDF',
+    weekClear: '清空', weekClose: '关闭',
+    weekMealTypes: '包含餐次', weekPrefs: '客户偏好',
+    weekCarb: '碳水', weekFocus: '调理方向', weekDiet: '饮食', weekAvoid: '忌口',
+    weekAny: '不限', weekClientName: '客户姓名', weekClientPh: '客户姓名',
+    weekDays: ['周日','周一','周二','周三','周四','周五','周六'],
+    weekEmpty: '点击「自动生成」创建 7 天计划', weekDragHint: '拖拽菜品可调整位置',
+    weekDayTotals: '每日营养素合计', weekProtein: '蛋白', weekFat: '脂肪', weekCarbs: '碳水',
+    weekCalories: '热量', weekGenerated: '已生成 7 天计划', weekCleared: '已清空周计划',
+    weekNeedGen: '请先生成计划',
+    weekRepeatB: '餐食重复策略', weekRepeatL: '午餐重复策略',
+    weekStrategyA: '自然重复', weekStrategyB: '每天不同',
+    weekTitle2: '7天餐计划', weekSubtitle: n => `${n} · 一周餐食总览`,
+    weekShowMacros: '显示每餐营养素',
+    weekIncludeRecipes: '附上食谱',
+    weekNotesLabel: '备注',
+    weekNotesPh: '在此添加备注…',
+    weekServings: '份量', weekReplaceMeal: '替换餐食', weekAddSecond: '添加第二项',
+    weekBack: '返回计划', weekMicros: '微量营养素', weekMicroDisplay: 'PDF中显示',
+    microLabels: { calcium:'钙', iron:'铁', sodium:'钠', potassium:'钾', fibre:'纤维', vitaminC:'维生素C' },
+    microUnit: { calcium:'mg', iron:'mg', sodium:'mg', potassium:'mg', fibre:'g', vitaminC:'mg' },
+    weekSavePlan: '保存计划', weekLoadPlan: '加载计划', weekSavedPlans: '已保存的餐计划',
+    weekPlanName: '计划名称', weekPlanNamePh: '输入名称以便日后查找，如：张三 2026年1月',
+    weekPlanSaved: '计划已保存', weekPlanLoaded: '计划已加载', weekPlanDeleted: '计划已删除',
+    weekPlanNameReq: '请输入名称', weekNoSavedPlans: '暂无保存的计划', weekDeletePlan: '删除',
+    weekLoadConfirm: '加载此计划？当前计划将被替换。',
+    practiceName: 'Brenda Le Wellness', credential: 'Brenda Le, RD'
+  },
+  en: {
+    docTitle: 'Meal Idea Generator',
+    brandSub: 'Prototype',
+    client: 'Client', clientPh: 'Client name',
+    demo: 'Load demo', preview: 'Preview handout', reset: 'Clear plan', exportPdf: 'Export PDF handout',
+    recipeLib: 'Recipe Library', weekGen: '7-Day Plan Generator',
+    langLabel: '中文',
+    prefs: 'Client preferences', clickFilter: 'Click to filter',
+    carb: 'Carb level', carbAny: 'Any', carbLow: 'Low carb', carbMod: 'Moderate carb',
+    focus: 'Focus', diet: 'Diet', avoid: 'Must exclude (allergens)',
+    matching: 'Matching', unit: 'meals',
+    addTo: 'Add to',
+    planTitle: 'Plan', autoFill: 'Auto-fill', clear: 'Clear',
+    noteTitle: 'Notes for the client',
+    notePh: 'e.g. Start with these three days — tell me which meals felt easy and we will add more next time.',
+    optRecipes: 'Include full recipes at the end of the handout',
+    optMacros: 'Show macros for each meal in handout',
+    day: n => `Day ${n}`,
+    dayLabel: n => `Day ${n}`,
+    addBtn: n => `+ Add to Day ${n}`,
+    recipe: 'Recipe', recipeTitle: 'View recipe',
+    dropHint: 'Drag meals here<br>or click "+" on the left',
+    empty: 'No meals match the current filters.<br>Try relaxing a filter, or add new meals to the library.',
+    tabs: { all:'All', breakfast:'Breakfast', lunch:'Lunch', dinner:'Dinner', snack:'Snacks' },
+    type: { breakfast:'Breakfast', lunch:'Lunch', dinner:'Dinner', snack:'Snack',
+            'morning-snack':'Morning Snack', 'afternoon-snack':'Afternoon Snack', 'night-snack':'Night Snack' },
+    carbName: { low:'Low carb', moderate:'Moderate carb' },
+    tag: { 'gut-healing':'Gut healing','asian':'Asian','quick-easy':'Quick & easy','no-cook':'No-cook',
+           'batch-cook':'Batch cook','high-protein':'High protein','vegetarian':'Vegetarian','vegan':'Vegan','gluten-free':'Gluten-free' },
+    tagShort: { 'gut-healing':'Gut healing', 'asian':'Asian' },
+    contains: { dairy:'dairy', gluten:'gluten', nuts:'nuts', egg:'egg', soy:'soy',
+                fish:'fish', shellfish:'shellfish', sesame:'sesame' },
+    containsTag: c => `Contains ${I18N.en.contains[c]}`,
+    ingredients: 'Ingredients', method: 'Method', notesLabel: 'Note: ', servingsUnit: ' servings',
+    macrosLabel: 'Per-serving macros', protein: 'Protein', fat: 'Fat', netCarbs: 'Net carbs', carbs: 'Carbs', calories: 'Cal',
+    grams: 'g', dayTotal: 'Day total',
+    printRecipe: 'Print this recipe', addToDay: n => `Add to Day ${n}`, editRecipe: 'Edit Recipe',
+    rKicker: 'Recipe', rMetaType: 'Meal: ', rMetaCarb: 'Carbs: ',
+    rMetaTime: 'Time: ', rMetaServ: 'Serves: ',
+    hKicker: 'Personalized Meal Ideas',
+    hTitle: n => `Meal Ideas for ${n}`,
+    hSub: (n,d) => `Handpicked for ${n} · ${d}`,
+    hDay: n => `Day ${n}`, hItems: n => `${n} meals`,
+    hRecipes: 'Recipes',
+    hEmpty: 'No meals selected yet. Click "+" in the library to add meals to the plan.',
+    hFoot: 'Personalised meal suggestions',
+    defaultClient: 'Client',
+    dateLocale: 'en-US',
+    tAdded: (d,n) => `Added to Day ${d}: ${n}`,
+    tNoMatch: 'No meals match the current filters',
+    tFilled: d => `Filled Day ${d} with a matching combination`,
+    tNeedMeal: 'Add at least one meal to the plan first',
+    tCleared: 'Plan cleared',
+    tDemo: 'Loaded demo client Sarah',
+    tPopup: 'The browser blocked the new window — please allow pop-ups',
+    tLang: 'Switched to English',
+    demoNote: 'Start with these three days — tell me which meals felt easy and we will add more next time.',
+    previewTitle: 'Handout preview',
+    /* recipe library */
+    libTitle: 'Recipe Library', libSearch: 'Search recipes...', libAdd: '+ New Recipe',
+    libEdit: 'Edit', libDelete: 'Delete', libBack: 'Back to list',
+    libSave: 'Save', libCancel: 'Cancel',
+    libConfirmDel: 'Delete this recipe? This cannot be undone.',
+    libSaved: 'Recipe saved', libDeleted: 'Recipe deleted', libAdded: 'Recipe added',
+    recName: 'Recipe name (Chinese)', recNameEn: 'Recipe name (English)', recType: 'Meal categories',
+    recTypeHint: 'Multi-select — a recipe can belong to several categories',
+    recTypeRequired: 'At least one category is required',
+    recCarb: 'Carb level', recTime: 'Cooking time', recServ: 'Servings',
+    recWhy: 'Why this meal', recIngredients: 'Ingredients (one per line)', recSteps: 'Steps (one per line)',
+    recNotes: 'Notes', recEmoji: 'Emoji icon', recImage: 'Recipe image',
+    recImageHint: 'Click to upload image (JPG/PNG)', recImageClear: 'Clear image',
+    recTags: 'Tags (click to toggle)', recContains: 'Allergens (click to toggle)',
+    recFocus: 'Focus labels (display, customizable)', recFocusHint: 'One label per line',
+    recMacros: 'Per-serving macros', recMacroG: 'g', recMacroPct: '%',
+    recCaloriesLabel: 'Calories (override)', recCaloriesPh: 'auto',
+    recCaloriesHint: 'Leave blank to auto-calculate from protein/fat/carbs',
+    recMicros: 'Micronutrients per serving (shown in PDF when toggled)',
+    recMicrosHint: 'Values per serving; missing fields keep the library default estimate.',
+    recNewId: 'New Recipe',
+    /* 7-day plan */
+    weekTitle: '7-Day Meal Plan Generator', weekGenerate: 'Auto-generate', weekExport: 'Export PDF',
+    weekClear: 'Clear', weekClose: 'Close',
+    weekMealTypes: 'Include meals', weekPrefs: 'Client preferences',
+    weekCarb: 'Carb', weekFocus: 'Focus', weekDiet: 'Diet', weekAvoid: 'Avoid',
+    weekAny: 'Any', weekClientName: 'Client name', weekClientPh: 'Client name',
+    weekDays: ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'],
+    weekEmpty: 'Click "Auto-generate" to create a 7-day plan', weekDragHint: 'Drag meals to rearrange',
+    weekDayTotals: 'Daily nutrient totals', weekProtein: 'Protein', weekFat: 'Fat', weekCarbs: 'Carbs',
+    weekCalories: 'Cal', weekGenerated: 'Generated 7-day plan', weekCleared: 'Cleared week plan',
+    weekNeedGen: 'Please generate a plan first',
+    weekRepeatB: 'Meal repeat', weekRepeatL: 'Lunch repeat',
+    weekStrategyA: 'Natural repeat', weekStrategyB: 'Different daily',
+    weekTitle2: '7-Day Meal Plan', weekSubtitle: n => `${n} · Weekly Overview`,
+    weekShowMacros: 'Show per-meal macros',
+    weekIncludeRecipes: 'Include recipes',
+    weekNotesLabel: 'Notes',
+    weekNotesPh: 'Add notes here…',
+    weekServings: 'Servings', weekReplaceMeal: 'Replace meal', weekAddSecond: 'Add 2nd item',
+    weekBack: 'Back to plan', weekMicros: 'Micronutrients', weekMicroDisplay: 'Show in PDF',
+    microLabels: { calcium:'Calcium', iron:'Iron', sodium:'Sodium', potassium:'Potassium', fibre:'Fibre', vitaminC:'Vitamin C' },
+    microUnit: { calcium:'mg', iron:'mg', sodium:'mg', potassium:'mg', fibre:'g', vitaminC:'mg' },
+    weekSavePlan: 'Save Plan', weekLoadPlan: 'Load Plan', weekSavedPlans: 'Saved Meal Plans',
+    weekPlanName: 'Plan name', weekPlanNamePh: 'Enter a name to find it later, e.g. "Jane Doe - Jan 2026"',
+    weekPlanSaved: 'Plan saved', weekPlanLoaded: 'Plan loaded', weekPlanDeleted: 'Plan deleted',
+    weekPlanNameReq: 'Please enter a name', weekNoSavedPlans: 'No saved plans yet', weekDeletePlan: 'Delete',
+    weekLoadConfirm: 'Load this plan? Current plan will be replaced.',
+    practiceName: 'Brenda Le Wellness', credential: 'Brenda Le, RD'
+  }
+};
+
+const FOCUS_TAGS = ['gut-healing','asian','quick-easy','no-cook','batch-cook','high-protein'];
+const DIET_TAGS  = ['vegetarian','vegan','gluten-free'];
+const AVOID_TAGS = ['dairy','gluten','nuts','egg','soy','fish','shellfish','sesame'];
+const ALL_TAGS   = [...FOCUS_TAGS, ...DIET_TAGS];
+const STORE_KEY  = 'mig_state_v3';
+const RECIPE_KEY = 'mig_recipes_v2';
+const WEEK_KEY   = 'mig_week_v1';
+const PLANS_KEY  = 'mig_saved_plans_v1';
+
+/* 默认语言：跟随浏览器 */
+function detectLang(){
+  const n = (navigator.language || navigator.userLanguage || 'en').toLowerCase();
+  return n.startsWith('zh') ? 'zh' : 'en';
+}
+
+const state = {
+  lang: detectLang(),
+  carb:'any', focus:[], diet:[], avoid:[],
+  type:'all', addDay:1,
+  day1:[], day2:[], day3:[],
+  day1Title:'', day2Title:'', day3Title:'',
+  clientName:'', clientNote:'', includeRecipes:true, showMacros:false
+};
+
+/* 7-day plan state */
+const WEEK_SLOTS = ['breakfast','morning-snack','lunch','afternoon-snack','dinner','night-snack'];
+// Map display slot -> meal-library type (all snack variants draw from snack pool)
+const SLOT_LIB_TYPE = { 'morning-snack':'snack', 'afternoon-snack':'snack', 'night-snack':'snack' };
+
+const weekState = {
+  mealTypes: ['breakfast','morning-snack','lunch','afternoon-snack','dinner','night-snack'],
+  carb:'any', focus:[], diet:[], avoid:[],
+  clientName:'',
+  repeatStrategy:'natural',
+  showMacros: true,
+  includeRecipes: false,
+  notes: '',
+  showMicros: false,
+  microSelection: ['calcium','iron','sodium','potassium','fibre','vitaminC'],
+  days: [[],[],[],[],[],[],[]]
+};
+
+/* --- Week plan entry helpers: supports both old (string id) and new ({id, servings}) formats --- */
+function entryId(e){ return typeof e === 'string' ? e : e.id; }
+function entryServ(e){ return typeof e === 'string' ? 1 : (e.servings || 1); }
+function mkEntry(id){ return { id, servings: 1 }; }
+
+/* --- Meal category helpers (multi-type): meals can now belong to several
+   meal categories at once (e.g. breakfast AND snack). Backward-compatible with
+   legacy data that only set `type`. The first slot in `types[]` is treated as
+   the primary type for styling purposes; `data-type` attributes still use it. */
+const MEAL_TYPES = ['breakfast','lunch','dinner','snack'];
+function mealTypes(m){
+  if(!m) return [];
+  if(Array.isArray(m.types) && m.types.length) return m.types;
+  if(m.type) return [m.type];
+  return [];
+}
+function primaryType(m){
+  const ts = mealTypes(m);
+  return ts[0] || 'snack';
+}
+function mealHasType(m, ty){ return mealTypes(m).includes(ty); }
+
+const t = () => I18N[state.lang];
+const c = m => m[state.lang];
+const altName = m => m[state.lang === 'zh' ? 'en' : 'zh'].name;
+
+/* ---------- 用户菜品数据（自定义/覆盖/删除） ---------- */
+function loadUserData(){
+  try{
+    const raw = localStorage.getItem(RECIPE_KEY);
+    if(raw) return JSON.parse(raw);
+  }catch(e){}
+  return { custom: [], overrides: {}, deleted: [] };
+}
+function saveUserData(d){
+  try{ localStorage.setItem(RECIPE_KEY, JSON.stringify(d)); }catch(e){}
+}
+
+/* 合并所有菜品：内置 + 覆盖 + 自定义，排除已删除 + 注入微量营养素 */
+let ALL_MEALS = [];
+function rebuildMeals(){
+  const ud = loadUserData();
+  ALL_MEALS = BASE_MEALS
+    .map(m => {
+      const merged = ud.overrides[m.id] ? Object.assign({}, m, ud.overrides[m.id]) : m;
+      // Inject micronutrient data from MICROS lookup if not already present
+      if(!merged.micros && typeof MICROS !== 'undefined' && MICROS[merged.id]){
+        merged.micros = MICROS[merged.id];
+      }
+      // Normalise multi-type: keep `types[]` in sync with legacy `type`.
+      const ts = mealTypes(merged);
+      merged.types = ts.length ? ts.slice() : ['snack'];
+      merged.type = merged.types[0];
+      return merged;
+    })
+    .filter(m => !ud.deleted.includes(m.id))
+    .concat(ud.custom.map(m => {
+      const c = {...m, _custom: true};
+      if(!c.micros && typeof MICROS !== 'undefined' && MICROS[c.id]) c.micros = MICROS[c.id];
+      const ts = mealTypes(c);
+      c.types = ts.length ? ts.slice() : ['snack'];
+      c.type = c.types[0];
+      return c;
+    }));
+}
+rebuildMeals();
+
+/* ---------- 持久化 ---------- */
+function save(){ try{ localStorage.setItem(STORE_KEY, JSON.stringify(state)); }catch(e){} }
+function load(){
+  try{
+    const raw = localStorage.getItem(STORE_KEY);
+    if(raw) Object.assign(state, JSON.parse(raw));
+  }catch(e){}
+}
+function saveWeek(){ try{ localStorage.setItem(WEEK_KEY, JSON.stringify(weekState)); }catch(e){} }
+function loadWeek(){
+  try{
+    const raw = localStorage.getItem(WEEK_KEY);
+    if(raw){
+      const parsed = JSON.parse(raw);
+      Object.assign(weekState, parsed);
+      // Migrate: convert old string-id entries to {id, servings} objects
+      if(weekState.days && Array.isArray(weekState.days)){
+        weekState.days = weekState.days.map(day=>{
+          if(!Array.isArray(day)) return [];
+          return day.map(e => typeof e === 'string' ? mkEntry(e) : e);
+        });
+      }
+      // Ensure new fields exist
+      if(!weekState.microSelection) weekState.microSelection = ['calcium','iron','sodium','potassium','fibre','vitaminC'];
+      if(typeof weekState.showMicros === 'undefined') weekState.showMicros = false;
+    }
+  }catch(e){}
+}
+
+/* ---------- Saved meal plan library ---------- */
+function loadSavedPlans(){
+  try{
+    const raw = localStorage.getItem(PLANS_KEY);
+    if(!raw) return [];
+    const arr = JSON.parse(raw);
+    return Array.isArray(arr) ? arr : [];
+  }catch(e){ return []; }
+}
+function saveSavedPlans(arr){
+  try{ localStorage.setItem(PLANS_KEY, JSON.stringify(arr)); }catch(e){}
+}
+function saveCurrentPlan(name){
+  const arr = loadSavedPlans();
+  const existing = arr.findIndex(p => p.name === name);
+  const planObj = {
+    id: Date.now(),
+    name: name,
+    data: JSON.parse(JSON.stringify(weekState)),
+    savedAt: new Date().toISOString()
+  };
+  if(existing >= 0){
+    planObj.id = arr[existing].id;
+    arr[existing] = planObj;
+  } else {
+    arr.push(planObj);
+  }
+  saveSavedPlans(arr);
+  return planObj;
+}
+function loadPlanIntoState(name){
+  const arr = loadSavedPlans();
+  const plan = arr.find(p => p.name === name);
+  if(!plan) return false;
+  // Deep-copy the saved data into weekState
+  Object.assign(weekState, JSON.parse(JSON.stringify(plan.data)));
+  // Ensure all expected fields exist
+  if(!weekState.days) weekState.days = [[],[],[],[],[],[],[]];
+  if(!weekState.mealTypes) weekState.mealTypes = ['breakfast','morning-snack','lunch','afternoon-snack','dinner','night-snack'];
+  if(!weekState.microSelection) weekState.microSelection = ['calcium','iron','sodium','potassium','fibre','vitaminC'];
+  if(typeof weekState.showMicros === 'undefined') weekState.showMicros = false;
+  saveWeek();
+  return true;
+}
+function deleteSavedPlan(name){
+  const arr = loadSavedPlans().filter(p => p.name !== name);
+  saveSavedPlans(arr);
+}
+
+/* ---------- 过滤逻辑 ---------- */
+function matches(m, carb, focus, diet, avoid){
+  carb = carb || state.carb; focus = focus || state.focus;
+  diet = diet || state.diet; avoid = avoid || state.avoid;
+  if(carb !== 'any' && m.carb !== carb) return false;
+  for(const x of focus){ if(!m.tags.includes(x)) return false; }
+  for(const x of diet){ if(!m.tags.includes(x)) return false; }
+  for(const x of avoid){ if(m.contains.includes(x)) return false; }
+  return true;
+}
+function filtered(){ return ALL_MEALS.filter(m=>matches(m)); }
+
+/* ---------- 工具 ---------- */
+const $  = (s,r=document)=>r.querySelector(s);
+const $$ = (s,r=document)=>Array.from(r.querySelectorAll(s));
+function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,x=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[x])); }
+function byId(id){ return ALL_MEALS.find(m=>m.id===id); }
+
+/* ---------- 宏量营养素计算 ---------- */
+function macroCalories(m, serv){
+  serv = serv || 1;
+  // Per-recipe manual override (from recipe library editor)
+  if(typeof m.calories === 'number' && m.calories > 0) return Math.round(m.calories) * serv;
+  if(!m.macros) return 0;
+  return ((m.macros.protein.g||0)*4 + (m.macros.fat.g||0)*9 + (m.macros.netCarbs.g||0)*4) * serv;
+}
+function dayMacros(entries){
+  const tot = { protein:0, fat:0, netCarbs:0, calories:0 };
+  entries.forEach(e=>{
+    const m = byId(entryId(e)); if(!m || !m.macros) return;
+    const serv = entryServ(e);
+    tot.protein += (m.macros.protein.g||0)*serv;
+    tot.fat += (m.macros.fat.g||0)*serv;
+    tot.netCarbs += (m.macros.netCarbs.g||0)*serv;
+    tot.calories += macroCalories(m, serv);
+  });
+  return tot;
+}
+/* ---------- 微量营养素计算 ---------- */
+const MICRO_KEYS = ['calcium','iron','sodium','potassium','fibre','vitaminC'];
+function dayMicros(entries){
+  const tot = {};
+  MICRO_KEYS.forEach(k=>tot[k]=0);
+  entries.forEach(e=>{
+    const m = byId(entryId(e)); if(!m || !m.micros) return;
+    const serv = entryServ(e);
+    MICRO_KEYS.forEach(k=>{ tot[k] += (m.micros[k]||0)*serv; });
+  });
+  return tot;
+}
+function macroHTML(m){
+  if(!m.macros) return '';
+  const L = t();
+  const colors = { protein:'#495a58', fat:'#d4967d', netCarbs:'#8a9b8e', calories:'#b89a7a' };
+  const labels = { protein: L.protein, fat: L.fat, netCarbs: L.netCarbs, calories: L.calories };
+  const cal = Math.round(macroCalories(m));
+  const data = { protein:m.macros.protein, fat:m.macros.fat, netCarbs:m.macros.netCarbs, calories:{g:cal,pct:''} };
+  return `<div class="macro-grid">
+    ${['protein','fat','netCarbs','calories'].map(k=>{
+      const v = data[k];
+      return `<div class="macro-cell">
+        <div class="g">${v.g}<span>${k==='calories'?'':L.grams}</span></div>
+        <div class="lbl">${labels[k]}</div>
+        ${k==='calories'?'':`<div class="pct">${v.pct}%</div>`}
+        ${k==='calories'?'':`<div class="macro-bar"><div class="fill" style="width:${v.pct}%;background:${colors[k]}"></div></div>`}
+      </div>`;
+    }).join('')}
+  </div>`;
+}
+function macroTagsHTML(m){
+  if(!m.macros) return '';
+  const L = t();
+  const cal = Math.round(macroCalories(m));
+  return `<div class="h-macros"><span class="m-tag">${L.protein} ${m.macros.protein.g}${L.grams} · ${L.fat} ${m.macros.fat.g}${L.grams} · ${L.carbs} ${m.macros.netCarbs.g}${L.grams} · ${L.calories} ${cal}</span></div>`;
+}
+
+/* ---------- 静态文案渲染 ---------- */
+function renderStaticText(){
+  const L = t();
+  document.documentElement.lang = state.lang === 'zh' ? 'zh-CN' : 'en';
+  document.title = L.docTitle;
+  $('#brandSub').textContent = L.brandSub;
+  $('#lblClient').textContent = L.client;
+  $('#clientName').placeholder = L.clientPh;
+  $('#btnDemo').textContent = L.demo;
+  $('#btnLib').textContent = L.recipeLib;
+  $('#btnWeek').textContent = L.weekGen;
+  $('#btnPreview').textContent = L.preview;
+  $('#btnReset').textContent = L.reset;
+  $('#btnPdf').textContent = L.exportPdf;
+  $('#langLabel').textContent = L.langLabel;
+  $('#tPrefs').textContent = L.prefs;
+  $('#tClickFilter').textContent = L.clickFilter;
+  $('#tCarb').textContent = L.carb;
+  $('#tCarbAny').textContent = L.carbAny;
+  $('#tCarbLow').textContent = L.carbLow;
+  $('#tCarbMod').textContent = L.carbMod;
+  $('#tFocus').textContent = L.focus;
+  $('#tDiet').textContent = L.diet;
+  $('#tAvoid').textContent = L.avoid;
+  $('#tMatching').textContent = L.matching;
+  $('#tUnit').textContent = L.unit;
+  $('#tAddTo').textContent = L.addTo;
+  $('#tPlanTitle').textContent = L.planTitle;
+  $('#btnAuto').textContent = L.autoFill;
+  $('#tNoteTitle').textContent = L.noteTitle;
+  $('#clientNote').placeholder = L.notePh;
+  $('#tOptRecipes').textContent = L.optRecipes;
+  $('#tOptMacros').textContent = L.optMacros;
+  $$('#daySeg button').forEach(b=>{ b.textContent = t().day(+b.dataset.day); });
+}
+
+/* ---------- 渲染：筛选器 ---------- */
+function renderFilters(){
+  const L = t();
+  $$('#carbSeg button').forEach(b=>b.classList.toggle('on', b.dataset.carb===state.carb));
+  $('#focusChips').innerHTML = FOCUS_TAGS.map(x=>{
+    const on = state.focus.includes(x);
+    return `<button class="chip ${on?'on':''}" data-focus="${x}">${L.tag[x]}</button>`;
+  }).join('');
+  $('#dietChips').innerHTML = DIET_TAGS.map(x=>{
+    const on = state.diet.includes(x);
+    return `<button class="chip ${on?'on':''}" data-diet="${x}">${L.tag[x]}</button>`;
+  }).join('');
+  $('#avoidChips').innerHTML = AVOID_TAGS.map(x=>{
+    const on = state.avoid.includes(x);
+    return `<button class="chip ${on?'on warn':''}" data-avoid="${x}">${L.contains[x]}</button>`;
+  }).join('');
+}
+
+/* ---------- 渲染：餐次标签 ---------- */
+function renderTabs(){
+  const L = t();
+  const list = filtered();
+  const counts = { all:list.length, breakfast:0, lunch:0, dinner:0, snack:0 };
+  // A meal in [breakfast, snack] categories counts in both tabs.
+  list.forEach(m=>{ mealTypes(m).forEach(t=>{ if(counts[t]!==undefined) counts[t]++; }); });
+  $('#typeTabs').innerHTML = ['all','breakfast','lunch','dinner','snack'].map(k=>
+    `<button data-type="${k}" class="${state.type===k?'on':''}">${L.tabs[k]}<span class="n">${counts[k]}</span></button>`
+  ).join('');
+  $$('#daySeg button').forEach(b=>b.classList.toggle('on', +b.dataset.day===state.addDay));
+}
+
+/* ---------- 渲染：图片 / 占位 ---------- */
+function imgSrc(m){
+  if(!m.img) return '';
+  return /^data:/.test(m.img) ? m.img : 'images/' + m.img;
+}
+function photoHTML(m, cls){
+  const img = m.img ? `<img src="${imgSrc(m)}" alt="" loading="lazy" onerror="this.remove()">` : '';
+  return `<div class="${cls}" data-type="${m.type}"><span class="ph-emoji">${m.emoji}</span>${img}</div>`;
+}
+function focusTagsHTML(m){
+  if(!m.focus || !m.focus.length) return '';
+  return `<div class="h-focus">${m.focus.map(f=>`<span class="f-tag">${esc(f)}</span>`).join('')}</div>`;
+}
+function wrapName(name){
+  // Let the browser wrap naturally — no forced line breaks.
+  // CSS handles width/overflow so the name uses the full cell width
+  // and only wraps when the text doesn't fit on one line.
+  return esc(name);
+}
+function tagHTML(m){
+  const L = t();
+  const out = [];
+  if(m.tags.includes('gut-healing')) out.push(`<span class="tag gut">${L.tagShort['gut-healing']}</span>`);
+  if(m.tags.includes('asian')) out.push(`<span class="tag asian">${L.tagShort['asian']}</span>`);
+  m.tags.filter(x=>!['gut-healing','asian'].includes(x)).slice(0,2)
+    .forEach(x=>out.push(`<span class="tag">${L.tag[x]||x}</span>`));
+  return `<div class="tags">${out.join('')}</div>`;
+}
+
+/* ---------- 渲染：菜品库 ---------- */
+function renderLibrary(){
+  const L = t();
+  const list = filtered().filter(m=>state.type==='all' || mealHasType(m, state.type));
+  const grid = $('#libGrid');
+  if(!list.length){
+    grid.innerHTML = `<div class="empty" style="grid-column:1/-1"><span class="big">🔍</span>${L.empty}</div>`;
+    return;
+  }
+  grid.innerHTML = list.map(m=>{
+    const d = c(m);
+    const mc = m.macros ? `<div class="macro-mini">
+      <span>P ${m.macros.protein.g}g</span><span>F ${m.macros.fat.g}g</span><span>C ${m.macros.netCarbs.g}g</span><span>${Math.round(macroCalories(m))}Cal</span>
+    </div>` : '';
+    return `<div class="meal ${m._custom?'custom':''}">
+      ${photoHTML(m,'photo')}
+      <span class="typebadge">${L.type[m.type]}</span>
+      <span class="carbbadge">${L.carbName[m.carb]}</span>
+      <div class="meal-body">
+        <div>
+          <div class="meal-name">${esc(d.name)}</div>
+          <div class="meal-alt">${esc(altName(m))}</div>
+        </div>
+        <div class="meal-meta"><span>⏱ ${esc(d.time)}</span><span>🍽 ${esc(d.servings)}</span></div>
+        ${mc}
+        ${tagHTML(m)}
+        <div class="meal-actions">
+          <button class="addbtn" data-add="${m.id}">${L.addBtn(state.addDay)}</button>
+          <button class="recbtn" data-rec="${m.id}" title="${L.recipeTitle}">${L.recipe}</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+/* ---------- 渲染：计划 ---------- */
+function miniHTML(m, day){
+  const L = t(), d = c(m);
+  return `<div class="mini">
+    ${photoHTML(m,'thumb')}
+    <div class="t"><b>${esc(d.name)}</b><span>${L.type[m.type]} · ${esc(d.time)}</span></div>
+    <button class="recbtn" data-rec="${m.id}" style="padding:4px 7px;font-size:11px">${L.recipe}</button>
+    <button class="x" data-del="${m.id}" data-day="${day}" title="✕">✕</button>
+  </div>`;
+}
+function renderPlan(){
+  const L = t();
+  const days = [[1,state.day1,state.day1Title],[2,state.day2,state.day2Title],[3,state.day3,state.day3Title]];
+  $('#planBody').innerHTML = days.map(([n,arr,title])=>{
+    const body = arr.length
+      ? arr.map(id=>{ const m=byId(id); return m?miniHTML(m,n):''; }).join('')
+      : `<div class="dropzone" data-drop="${n}">${L.dropHint}</div>`;
+    const dayLabel = title || L.dayLabel(n);
+    return `<div class="day">
+      <div class="day-h">
+        <input class="day-title-edit" data-day-title="${n}" value="${esc(dayLabel)}">
+        <span class="cnt">${arr.length} ${L.unit}</span>
+        <span class="sp"></span>
+        <button class="btn ghost" data-clear="${n}" style="font-size:11.5px;padding:3px 7px">${L.clear}</button>
+      </div>${body}</div>`;
+  }).join('');
+
+  $$('#planBody .day').forEach(dayEl=>{
+    const dz = () => dayEl.querySelector('[data-drop]');
+    dayEl.addEventListener('dragover', e=>{ if(!dz()) return; e.preventDefault(); dz().classList.add('over'); });
+    dayEl.addEventListener('dragleave', ()=>{ if(dz()) dz().classList.remove('over'); });
+    dayEl.addEventListener('drop', e=>{
+      if(!dz()) return; e.preventDefault(); addToDay(e.dataTransfer.getData('text/plain'), +dz().dataset.drop);
+    });
+  });
+  $$('#planBody [data-del]').forEach(b=>b.onclick=()=>{
+    const day = +b.dataset.day;
+    state['day'+day] = state['day'+day].filter(x=>x!==b.dataset.del);
+    save(); renderAll();
+  });
+  $$('#planBody [data-clear]').forEach(b=>b.onclick=()=>{
+    state['day'+b.dataset.clear]=[]; save(); renderAll();
+  });
+  $$('#planBody [data-day-title]').forEach(inp=>{
+    inp.addEventListener('change', ()=>{
+      state['day'+inp.dataset.dayTitle+'Title'] = inp.value;
+      save(); buildHandout();
+    });
+  });
+}
+
+/* ---------- 渲染：总入口 ---------- */
+function renderAll(){
+  renderStaticText(); renderFilters(); renderTabs(); renderLibrary(); renderPlan();
+  $('#matchN').textContent = filtered().length;
+  $('#clientName').value = state.clientName;
+  $('#clientNote').value = state.clientNote;
+  $('#optRecipes').checked = state.includeRecipes;
+  $('#optMacros').checked = state.showMacros;
+  buildHandout();
+  bindLibrary();
+}
+
+/* ---------- 加入计划 ---------- */
+function addToDay(id, day){
+  const key = 'day'+day;
+  if(!state[key].includes(id)) state[key].push(id);
+  save(); renderAll();
+  const m = byId(id);
+  if(m) toast(t().tAdded(day, c(m).name));
+}
+
+/* ---------- 示例数据 ---------- */
+function applyDemo(){
+  state.clientName = 'Sarah';
+  state.carb = 'low'; state.focus = []; state.diet = []; state.avoid = ['dairy','gluten'];
+  state.clientNote = t().demoNote;
+  state.day1 = ['b6','l2','d1','s3'];
+  state.day2 = ['b8','l3','d8','s3'];
+  state.day3 = ['b18','l19','d18','s12'];
+  state.day1Title=''; state.day2Title=''; state.day3Title='';
+  state.includeRecipes = true;
+}
+
+/* ---------- 一键填充 ---------- */
+function autoFill(day){
+  const L = t();
+  const pool = filtered();
+  const pick = (type,n)=>{
+    const arr = pool.filter(m=>mealHasType(m, type));
+    for(let i=arr.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [arr[i],arr[j]]=[arr[j],arr[i]]; }
+    return arr.slice(0,n).map(m=>m.id);
+  };
+  const ids = [...pick('breakfast',1),...pick('lunch',1),...pick('dinner',1),...pick('snack',1)];
+  if(!ids.length){ toast(L.tNoMatch); return; }
+  state['day'+day] = ids; save(); renderAll();
+  toast(L.tFilled(day));
+}
+
+/* ---------- 食谱弹窗（含宏量营养素） ---------- */
+function openRecipe(id){
+  const L = t(), m = byId(id); if(!m) return;
+  const d = c(m);
+  $('#modalSheet').innerHTML = `
+    ${photoHTML(m,'rec-hero')}
+    <button class="rec-close" data-close>✕</button>
+    <div class="rec-body">
+      <h2>${esc(d.name)}</h2>
+      <div class="alt">${esc(altName(m))}</div>
+      <div class="rec-meta">
+        <span><b>${L.type[m.type]}</b></span>
+        <span><b>${L.carbName[m.carb]}</b></span>
+        <span>⏱ <b>${esc(d.time)}</b></span>
+        <span>🍽 <b>${esc(d.servings)}</b></span>
+      </div>
+      <div class="tags">${m.tags.map(x=>`<span class="tag">${L.tag[x]||x}</span>`).join('')}
+        ${m.contains.map(x=>`<span class="tag">${L.containsTag(x)}</span>`).join('')}</div>
+      ${m.focus && m.focus.length ? `<div class="h-focus" style="margin-top:8px">${m.focus.map(f=>`<span class="f-tag">${esc(f)}</span>`).join('')}</div>` : ''}
+      ${d.why?`<div class="why">${esc(d.why)}</div>`:''}
+      <div class="two">
+        <div><div class="sec-t">${L.ingredients}</div><ul class="ing">${d.ingredients.map(i=>`<li>${esc(i)}</li>`).join('')}</ul></div>
+        <div><div class="sec-t">${L.method}</div><ol class="steps">${d.steps.map(s=>`<li>${esc(s)}</li>`).join('')}</ol></div>
+      </div>
+      ${m.macros ? `<div class="macro-section"><div class="sec-t">${L.macrosLabel}</div>${macroHTML(m)}</div>` : ''}
+      ${d.notes?`<div class="notes"><b>${L.notesLabel}</b>${esc(d.notes)}</div>`:''}
+      <div style="margin-top:18px;display:flex;gap:9px">
+        <button class="btn primary" data-print-rec="${m.id}">${L.printRecipe}</button>
+        <button class="btn" data-add-rec="${m.id}">${L.addToDay(state.addDay)}</button>
+        <button class="btn coral-btn" data-edit-rec="${m.id}">${L.editRecipe}</button>
+      </div>
+    </div>`;
+  $('#modal').classList.add('open');
+  $$('#modalSheet [data-close]').forEach(b=>b.onclick=closeModal);
+  $$('#modalSheet [data-print-rec]').forEach(b=>b.onclick=()=>printRecipe(m.id));
+  $$('#modalSheet [data-add-rec]').forEach(b=>b.onclick=()=>{ addToDay(m.id, state.addDay); closeModal(); });
+  $$('#modalSheet [data-edit-rec]').forEach(b=>b.onclick=()=>{
+    closeModal();
+    editingId = m.id;
+    renderLibModal();
+    $('#libModal').classList.add('open');
+  });
+}
+function closeModal(){ $('#modal').classList.remove('open'); }
+
+/* ---------- 打印：单份食谱 ---------- */
+function brandLogoHTML(){
+  return `<div class="h-logo">
+    <img class="h-logo-icon" src="images/Logo.png" alt="Brenda Le Wellness">
+  </div>`;
+}
+function brandLogoHTMLSmall(cls){
+  return `<div class="${cls}">
+    <img src="images/Logo.png" alt="Brenda Le Wellness" style="height:46px">
+  </div>`;
+}
+
+function printRecipe(id){
+  const L = t(), m = byId(id); if(!m) return;
+  const d = c(m);
+  const en = state.lang === 'en';
+  $('#recipeSheet').innerHTML = `
+    <div class="r-head">
+      ${brandLogoHTMLSmall('r-logo')}
+      <div class="r-brand-text">
+        <div class="pn">${L.practiceName}</div>
+        <div class="cr">${L.credential}</div>
+      </div>
+      <div style="flex:1;text-align:right">
+        <h1>${esc(d.name)}</h1>
+        ${en ? '' : `<div class="z">${esc(altName(m))}</div>`}
+      </div>
+    </div>
+    <div class="r-meta">
+      <span>${L.rMetaType}<b>${L.type[m.type]}</b></span>
+      <span>${L.rMetaCarb}<b>${L.carbName[m.carb]}</b></span>
+      <span>${L.rMetaTime}<b>${esc(d.time)}</b></span>
+      <span>${L.rMetaServ}<b>${esc(d.servings)}</b></span>
+    </div>
+    ${d.why?`<div class="why">${esc(d.why)}</div>`:''}
+    <div class="two">
+      <div><div class="sec-t">${L.ingredients}</div><ul class="ing">${d.ingredients.map(i=>`<li>${esc(i)}</li>`).join('')}</ul></div>
+      <div><div class="sec-t">${L.method}</div><ol class="steps">${d.steps.map(s=>`<li>${esc(s)}</li>`).join('')}</ol></div>
+    </div>
+    ${m.macros ? `<div class="r-macros">
+      <span>${L.protein}: <b>${m.macros.protein.g}${L.grams}</b> (${m.macros.protein.pct}%)</span>
+      <span>${L.fat}: <b>${m.macros.fat.g}${L.grams}</b> (${m.macros.fat.pct}%)</span>
+      <span>${L.netCarbs}: <b>${m.macros.netCarbs.g}${L.grams}</b> (${m.macros.netCarbs.pct}%)</span>
+      <span>${L.calories}: <b>${Math.round(macroCalories(m))}</b></span>
+    </div>` : ''}
+    ${d.notes?`<div class="notes"><b>${L.notesLabel}</b>${esc(d.notes)}</div>`:''}
+    <div class="r-foot">${L.practiceName} · ${L.credential}</div>`;
+  document.body.classList.add('mode-recipe');
+  window.print();
+  setTimeout(()=>document.body.classList.remove('mode-recipe'), 400);
+}
+
+/* ---------- 生成讲义（含品牌） ---------- */
+function handoutMealHTML(id){
+  const L = t(), m = byId(id); if(!m) return '';
+  const d = c(m);
+  const en = state.lang === 'en';
+  const macroBlock = state.showMacros && m.macros ? macroTagsHTML(m) : '';
+  const altLine = en ? '' : esc(altName(m));
+  return `<div class="h-meal">
+    ${photoHTML(m,'h-photo')}
+    <div class="h-mb">
+      <div class="n">${esc(d.name)}</div>
+      ${altLine ? `<div class="z">${altLine}</div>` : ''}
+      ${macroBlock}
+    </div>
+  </div>`;
+}
+function handoutRecipeHTML(id){
+  const L = t(), m = byId(id); if(!m) return '';
+  const d = c(m);
+  const en = state.lang === 'en';
+  const macroLine = m.macros ? `<div class="r-macros">
+    <span>${L.protein}: <b>${m.macros.protein.g}${L.grams}</b></span>
+    <span>${L.fat}: <b>${m.macros.fat.g}${L.grams}</b></span>
+    <span>${L.carbs}: <b>${m.macros.netCarbs.g}${L.grams}</b></span>
+    <span>${L.calories}: <b>${Math.round(macroCalories(m))}</b></span>
+  </div>` : '';
+  const recipePhoto = photoHTML(m, 'h-recipe-photo');
+  return `<div class="h-recipe">
+    <div class="h-recipe-top">
+      ${recipePhoto}
+      <div class="h-recipe-head">
+        <h4>${esc(d.name)}</h4>
+        <div class="h-recipe-meta">${L.type[m.type]} · ${esc(d.time)} · ${esc(d.servings)}${L.servingsUnit}</div>
+      </div>
+    </div>
+    <div class="cols">
+      <div><div class="sec-t">${L.ingredients}</div><ul class="ing">${d.ingredients.map(i=>`<li>${esc(i)}</li>`).join('')}</ul></div>
+      <div><div class="sec-t">${L.method}</div><ol class="steps">${d.steps.map(s=>`<li>${esc(s)}</li>`).join('')}</ol></div>
+    </div>
+    ${macroLine}
+  </div>`;
+}
+function buildHandout(){
+  const L = t();
+  const dateStr = new Date().toLocaleDateString(L.dateLocale,{year:'numeric',month:'long',day:'numeric'});
+  const name = state.clientName ? esc(state.clientName) : L.defaultClient;
+  const days = [[1,state.day1,state.day1Title],[2,state.day2,state.day2Title],[3,state.day3,state.day3Title]];
+  const uniq = [...new Set([...state.day1,...state.day2,...state.day3])];
+  const en = state.lang === 'en';
+
+  const dayBlocks = days.map(([n,arr,title])=>{
+    if(!arr.length) return '';
+    const label = title || L.hDay(n);
+    const dm = state.showMacros ? dayMacros(arr) : null;
+    const macroLine = dm ? `<span class="h-day-macros">${L.protein} ${Math.round(dm.protein)}g · ${L.fat} ${Math.round(dm.fat)}g · ${L.carbs} ${Math.round(dm.netCarbs)}g · ${L.calories} ${Math.round(dm.calories)}</span>` : '';
+    const breakClass = n === 1 ? 'h-first-day' : 'h-day-break';
+    return `<div class="${breakClass}"></div>
+      <div class="h-day">${esc(label)}${macroLine}</div>
+      <div class="h-grid">${arr.map(handoutMealHTML).join('')}</div>`;
+  }).filter(x=>x).join('');
+
+  const recipeBlock = (state.includeRecipes && uniq.length)
+    ? `<div class="h-recipes-start"></div>
+       <div class="h-day">${L.hRecipes}</div>
+       <div class="h-recipes-grid">${uniq.map(handoutRecipeHTML).join('')}</div>`
+    : '';
+
+  $('#handout').innerHTML = `<div class="h-page">
+    <div class="h-head">
+      ${brandLogoHTML()}
+      <div class="h-brand-text">
+        <div class="h-practice">${L.practiceName}</div>
+        <div class="h-credential">${L.credential}</div>
+      </div>
+      <div style="flex:1;text-align:right">
+        <div class="h-title">${L.hTitle(name)}</div>
+        <div class="h-sub">${dateStr}</div>
+      </div>
+    </div>
+    ${state.clientNote?`<div class="h-note">${esc(state.clientNote)}</div>`:''}
+    ${dayBlocks || `<div style="color:#6b7570;font-size:13px;padding:20px 0">${L.hEmpty}</div>`}
+    ${recipeBlock}
+    <div class="h-foot">
+      <img src="images/Logo.png" alt="Brenda Le Wellness" style="height:16px">
+      <span>${L.practiceName} · ${L.credential} — ${L.hFoot}</span>
+    </div>
+  </div>`;
+}
+
+/* ---------- 导出 PDF ---------- */
+function exportPDF(){
+  if(!state.day1.length && !state.day2.length && !state.day3.length){ toast(t().tNeedMeal); return; }
+  buildHandout();
+  document.body.classList.remove('mode-recipe','mode-week');
+  window.print();
+}
+
+/* ---------- 轻提示 ---------- */
+let toastTimer;
+function toast(msg){
+  let el = $('#toast');
+  if(!el){
+    el = document.createElement('div');
+    el.id = 'toast';
+    el.style.cssText = 'position:fixed;left:50%;bottom:26px;transform:translateX(-50%);background:#1f2421;color:#fff;padding:10px 18px;border-radius:10px;font-size:13px;z-index:200;opacity:0;transition:.22s;pointer-events:none;box-shadow:0 10px 30px rgba(0,0,0,.25)';
+    document.body.appendChild(el);
+  }
+  el.textContent = msg;
+  requestAnimationFrame(()=>{ el.style.opacity='1'; el.style.transform='translateX(-50%) translateY(-4px)'; });
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>{ el.style.opacity='0'; el.style.transform='translateX(-50%)'; }, 1900);
+}
+
+/* ============================================================
+   RECIPE LIBRARY EDITOR
+   ============================================================ */
+let editingId = null; // null = list view, id = editing
+
+function openLibModal(){
+  editingId = null;
+  renderLibModal();
+  $('#libModal').classList.add('open');
+}
+function closeLibModal(){ $('#libModal').classList.remove('open'); }
+
+function renderLibModal(){
+  const L = t();
+  if(editingId === 'new' || (editingId && editingId !== 'new')){
+    renderRecipeEditor(editingId);
+    return;
+  }
+  // list view
+  const ud = loadUserData();
+  const allMeals = ALL_MEALS.slice().sort((a,b)=>{
+    const ty = ['breakfast','lunch','dinner','snack'];
+    const dt = ty.indexOf(a.type) - ty.indexOf(b.type);
+    if(dt) return dt;
+    return c(a).name.localeCompare(c(b).name);
+  });
+  $('#libSheet').innerHTML = `
+    <button class="modal-close" data-lib-close>✕</button>
+    <div class="lib-modal-body">
+      <div class="lib-toolbar">
+        <h2>${L.libTitle}</h2>
+        <input class="lib-search" id="libSearch" placeholder="${L.libSearch}" value="">
+        <button class="btn brand-btn" data-lib-new>${L.libAdd}</button>
+      </div>
+      <div class="lib-list" id="libList">
+        ${allMeals.map(m=>{
+          const d = c(m);
+          return `<div class="lib-item">
+            <div class="lib-thumb" data-type="${m.type}">
+              ${m.img ? `<img src="${imgSrc(m)}" alt="" onerror="this.remove()">` : `<span class="ph-emoji" style="font-size:22px;width:auto;height:auto;background:none;box-shadow:none">${m.emoji}</span>`}
+            </div>
+            <div class="info">
+              <b>${esc(d.name)} ${m._custom?'<span style="color:var(--brand-coral);font-size:10px">✎</span>':''}</b>
+              <span>${L.type[m.type]} · ${L.carbName[m.carb]} · ${esc(d.time)}</span>
+            </div>
+            <div class="acts">
+              <button data-lib-edit="${m.id}">${L.libEdit}</button>
+              <button class="del" data-lib-del="${m.id}">${L.libDelete}</button>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>`;
+  $$('#libSheet [data-lib-close]').forEach(b=>b.onclick=closeLibModal);
+  $('#libSheet [data-lib-new]').onclick = ()=>{ editingId='new'; renderLibModal(); };
+  $$('#libSheet [data-lib-edit]').forEach(b=>b.onclick=()=>{ editingId=b.dataset.libEdit; renderLibModal(); });
+  $$('#libSheet [data-lib-del]').forEach(b=>b.onclick=()=>{
+    if(!confirm(L.libConfirmDel)) return;
+    deleteRecipe(b.dataset.libDel);
+  });
+  const search = $('#libSearch');
+  if(search) search.addEventListener('input', ()=>{
+    const q = search.value.toLowerCase();
+    $$('#libSheet .lib-item').forEach(el=>{
+      const txt = el.textContent.toLowerCase();
+      el.style.display = txt.includes(q) ? '' : 'none';
+    });
+  });
+}
+
+function renderRecipeEditor(id){
+  const L = t();
+  const isNew = id === 'new';
+  let m;
+  if(isNew){
+    const maxId = ALL_MEALS.reduce((mx,r)=>{
+      const n = parseInt(r.id.replace(/\D/g,''))||0;
+      return Math.max(mx, r.id.charAt(0)+n);
+    }, 'a0');
+    m = {
+      id: 'u'+Date.now().toString(36),
+      type:'breakfast', carb:'moderate', tags:[], contains:[], focus:[],
+      img:null, emoji:'🍽',
+      en:{ name:'', time:'', servings:'1', why:'', ingredients:[], steps:[], notes:'' },
+      zh:{ name:'', time:'', servings:'1', why:'', ingredients:[], steps:[], notes:'' },
+      macros:{ protein:{g:0,pct:0}, fat:{g:0,pct:0}, netCarbs:{g:0,pct:0} },
+      _custom:true
+    };
+  } else {
+    m = byId(id); if(!m) return;
+  }
+
+  $('#libSheet').innerHTML = `
+    <button class="modal-close" data-lib-close>✕</button>
+    <div class="rec-editor">
+      <h2>${isNew ? L.recNewId : L.libEdit}</h2>
+
+      <div class="form-grid2">
+        <div class="form-row">
+          <label>${L.recName}</label>
+          <input id="re-name-zh" value="${esc(m.zh.name)}">
+        </div>
+        <div class="form-row">
+          <label>${L.recNameEn}</label>
+          <input id="re-name-en" value="${esc(m.en.name)}">
+        </div>
+      </div>
+
+      <div class="form-grid3">
+        <div class="form-row">
+          <label>${L.recType} <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:10px;color:var(--muted)">(${L.recTypeHint || '可多选 / multi-select'})</span></label>
+          <div id="re-types" class="tag-edit">
+            ${MEAL_TYPES.map(ty=>`<button type="button" class="chip ${mealHasType(m, ty)?'on':''}" data-re-type="${ty}">${L.type[ty]}</button>`).join('')}
+          </div>
+        </div>
+        <div class="form-row">
+          <label>${L.recCarb}</label>
+          <select id="re-carb">
+            <option value="low" ${m.carb==='low'?'selected':''}>${L.carbName.low}</option>
+            <option value="moderate" ${m.carb==='moderate'?'selected':''}>${L.carbName.moderate}</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label>${L.recEmoji}</label>
+          <input id="re-emoji" value="${esc(m.emoji)}" style="text-align:center;font-size:18px">
+        </div>
+      </div>
+
+      <div class="form-grid2">
+        <div class="form-row">
+          <label>${L.recTime}（中文 / English）</label>
+          <div style="display:flex;gap:8px">
+            <input id="re-time-zh" value="${esc(m.zh.time)}" style="flex:1">
+            <input id="re-time-en" value="${esc(m.en.time)}" style="flex:1">
+          </div>
+        </div>
+        <div class="form-row">
+          <label>${L.recServ}（中文 / English）</label>
+          <div style="display:flex;gap:8px">
+            <input id="re-serv-zh" value="${esc(m.zh.servings)}" style="flex:1">
+            <input id="re-serv-en" value="${esc(m.en.servings)}" style="flex:1">
+          </div>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <label>${L.recWhy}（中文）</label>
+        <textarea id="re-why-zh">${esc(m.zh.why)}</textarea>
+      </div>
+      <div class="form-row">
+        <label>${L.recWhy}（English）</label>
+        <textarea id="re-why-en">${esc(m.en.why)}</textarea>
+      </div>
+
+      <div class="form-grid2">
+        <div class="form-row">
+          <label>${L.recIngredients}（中文）</label>
+          <textarea id="re-ing-zh" style="min-height:100px">${m.zh.ingredients.map(esc).join('\n')}</textarea>
+        </div>
+        <div class="form-row">
+          <label>${L.recIngredients}（English）</label>
+          <textarea id="re-ing-en" style="min-height:100px">${m.en.ingredients.map(esc).join('\n')}</textarea>
+        </div>
+      </div>
+
+      <div class="form-grid2">
+        <div class="form-row">
+          <label>${L.recSteps}（中文）</label>
+          <textarea id="re-steps-zh" style="min-height:100px">${m.zh.steps.map(esc).join('\n')}</textarea>
+        </div>
+        <div class="form-row">
+          <label>${L.recSteps}（English）</label>
+          <textarea id="re-steps-en" style="min-height:100px">${m.en.steps.map(esc).join('\n')}</textarea>
+        </div>
+      </div>
+
+      <div class="form-grid2">
+        <div class="form-row">
+          <label>${L.recNotes}（中文）</label>
+          <textarea id="re-notes-zh">${esc(m.zh.notes)}</textarea>
+        </div>
+        <div class="form-row">
+          <label>${L.recNotes}（English）</label>
+          <textarea id="re-notes-en">${esc(m.en.notes)}</textarea>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <label>${L.recImage}</label>
+        <div class="img-upload-area">
+          <div class="img-preview" id="re-img-preview" data-type="${m.type}">
+            ${m.img ? `<img src="${imgSrc(m)}" alt="" onerror="this.remove()">` : `<span class="ph-emoji" style="font-size:30px;width:auto;height:auto;background:none;box-shadow:none">${m.emoji}</span>`}
+          </div>
+          <label class="file-btn">
+            ${L.recImageHint}
+            <input type="file" accept="image/jpeg,image/png" id="re-img-file" style="display:none">
+          </label>
+          ${m.img ? `<button class="btn ghost" id="re-img-clear" style="font-size:11px">${L.recImageClear}</button>` : ''}
+        </div>
+      </div>
+
+      <div class="form-row">
+        <label>${L.recTags}</label>
+        <div class="tag-edit" id="re-tags">
+          ${ALL_TAGS.map(x=>`<button class="chip ${m.tags.includes(x)?'on':''}" data-tag="${x}">${L.tag[x]}</button>`).join('')}
+        </div>
+      </div>
+
+      <div class="form-row">
+        <label>${L.recContains}</label>
+        <div class="tag-edit" id="re-contains">
+          ${AVOID_TAGS.map(x=>`<button class="chip ${m.contains.includes(x)?'on warn':''}" data-cont="${x}">${L.contains[x]}</button>`).join('')}
+        </div>
+      </div>
+
+      <div class="form-row">
+        <label>${L.recFocus} <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:10px;color:var(--muted)">(${L.recFocusHint})</span></label>
+        <textarea id="re-focus" style="min-height:44px">${(m.focus||[]).map(esc).join('\n')}</textarea>
+      </div>
+
+      <div class="form-row">
+        <label>${L.recMacros}</label>
+        <div class="macro-inputs">
+          <div class="macro-input-group">
+            <label>${L.protein}</label>
+            <div class="fields">
+              <div class="field"><span>${L.recMacroG}</span><input type="number" id="re-p-g" value="${m.macros?m.macros.protein.g:0}" min="0"></div>
+              <div class="field"><span>${L.recMacroPct}</span><input type="number" id="re-p-pct" value="${m.macros?m.macros.protein.pct:0}" min="0" max="100"></div>
+            </div>
+          </div>
+          <div class="macro-input-group">
+            <label>${L.fat}</label>
+            <div class="fields">
+              <div class="field"><span>${L.recMacroG}</span><input type="number" id="re-f-g" value="${m.macros?m.macros.fat.g:0}" min="0"></div>
+              <div class="field"><span>${L.recMacroPct}</span><input type="number" id="re-f-pct" value="${m.macros?m.macros.fat.pct:0}" min="0" max="100"></div>
+            </div>
+          </div>
+          <div class="macro-input-group">
+            <label>${L.netCarbs}</label>
+            <div class="fields">
+              <div class="field"><span>${L.recMacroG}</span><input type="number" id="re-c-g" value="${m.macros?m.macros.netCarbs.g:0}" min="0"></div>
+              <div class="field"><span>${L.recMacroPct}</span><input type="number" id="re-c-pct" value="${m.macros?m.macros.netCarbs.pct:0}" min="0" max="100"></div>
+            </div>
+          </div>
+          <div class="macro-input-group" style="background:var(--brand-soft)">
+            <label>${L.recCaloriesLabel}</label>
+            <div class="fields" style="grid-template-columns:1fr">
+              <div class="field"><span>${L.calories}</span><input type="number" id="re-cal" value="${typeof m.calories === 'number' ? m.calories : ''}" min="0" step="1" placeholder="${esc(L.recCaloriesPh)}"></div>
+            </div>
+            <div style="font-size:10px;color:var(--muted);margin-top:5px">${L.recCaloriesHint}</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <label>${L.recMicros || 'Micronutrients (per serving)'}</label>
+        <div class="micro-inputs">
+          ${MICRO_KEYS.map(mk=>{
+            const v = (m.micros && typeof m.micros[mk] === 'number') ? m.micros[mk] : (typeof MICROS !== 'undefined' && MICROS[m.id] ? MICROS[m.id][mk] : '');
+            return `<div class="micro-input-group">
+              <label>${L.microLabels[mk]}</label>
+              <div class="fields" style="grid-template-columns:1fr">
+                <div class="field"><span>${L.microUnit[mk]}</span><input type="number" id="re-micro-${mk}" value="${v === '' ? '' : v}" min="0" step="0.1"></div>
+              </div>
+            </div>`;
+          }).join('')}
+        </div>
+        <div style="font-size:10px;color:var(--muted);margin-top:6px">${L.recMicrosHint || ''}</div>
+      </div>
+
+      <div style="display:flex;gap:10px;margin-top:18px">
+        <button class="btn brand-btn" id="re-save">${L.libSave}</button>
+        <button class="btn" id="re-cancel">${L.libCancel}</button>
+      </div>
+    </div>`;
+
+  // Bind editor events
+  $$('#libSheet [data-lib-close]').forEach(b=>b.onclick=closeLibModal);
+  $('#re-cancel').onclick = ()=>{ editingId=null; renderLibModal(); };
+  $('#re-save').onclick = ()=>saveRecipeFromForm(m);
+
+  // Tags toggle
+  $$('#re-tags .chip').forEach(b=>b.onclick=()=>{
+    b.classList.toggle('on');
+  });
+  $$('#re-contains .chip').forEach(b=>b.onclick=()=>{
+    b.classList.toggle('on');
+    b.classList.toggle('warn');
+  });
+  // Multi-type category toggle: at least one must stay selected — if the user
+  // tries to deselect the last one, snap the primary type back on instead.
+  const typeBtns = $$('#re-types .chip');
+  typeBtns.forEach(b=>b.onclick=()=>{
+    const anyOtherOn = typeBtns.some(o=>o!==b && o.classList.contains('on'));
+    if(b.classList.contains('on') && !anyOtherOn){
+      // Don't allow clearing the last category — flash a hint and keep it on.
+      toast(L.recTypeRequired || 'At least one category is required');
+      return;
+    }
+    b.classList.toggle('on');
+  });
+
+  // Image upload
+  const imgFile = $('#re-img-file');
+  if(imgFile){
+    imgFile.addEventListener('change', e=>{
+      const f = e.target.files[0]; if(!f) return;
+      if(f.size > 500000){ toast('Image too large (max 500KB)'); return; }
+      const reader = new FileReader();
+      reader.onload = ()=>{
+        const prev = $('#re-img-preview');
+        prev.innerHTML = `<img src="${reader.result}" alt="">`;
+        prev.dataset.uploaded = reader.result;
+      };
+      reader.readAsDataURL(f);
+    });
+  }
+  const imgClear = $('#re-img-clear');
+  if(imgClear) imgClear.onclick = ()=>{
+    const prev = $('#re-img-preview');
+    prev.innerHTML = `<span class="ph-emoji" style="font-size:30px;width:auto;height:auto;background:none;box-shadow:none">${$('#re-emoji').value||'🍽'}</span>`;
+    delete prev.dataset.uploaded;
+    imgClear.remove();
+  };
+}
+
+function saveRecipeFromForm(origMeal){
+  const L = t();
+  const val = id => { const el = $('#'+id); return el ? el.value.trim() : ''; };
+  const lines = id => { const el = $('#'+id); return el ? el.value.split('\n').map(s=>s.trim()).filter(Boolean) : []; };
+
+  const nameZh = val('re-name-zh');
+  const nameEn = val('re-name-en');
+  if(!nameZh && !nameEn){ toast('Name required'); return; }
+
+  const tags = $$('#re-tags .chip.on').map(b=>b.dataset.tag);
+  const contains = $$('#re-contains .chip.on').map(b=>b.dataset.cont);
+  // Multi-type categories: read in the canonical order so the primary type is
+  // stable. Order matters because `types[0]` is used as the visual primary.
+  const selectedTypes = $$('#re-types .chip.on').map(b=>b.dataset.reType);
+  const types = MEAL_TYPES.filter(t => selectedTypes.includes(t));
+  if(!types.length){
+    toast(L.recTypeRequired || 'At least one category is required');
+    return;
+  }
+  const focus = lines('re-focus');
+
+  const imgPrev = $('#re-img-preview');
+  const uploadedImg = imgPrev ? imgPrev.dataset.uploaded : null;
+  const existingImg = imgPrev && imgPrev.querySelector('img') ? imgPrev.querySelector('img').getAttribute('src') : null;
+
+  // Determine image: uploaded > existing > null
+  let img = uploadedImg || existingImg || null;
+  // If it was an existing images/ path and no upload, keep the filename
+  if(img && !uploadedImg && !/^data:/.test(img) && !img.startsWith('images/')){
+    // it's a filename from images/ folder
+    img = img.replace(/^images\//,'');
+  }
+
+  const updated = {
+    type: types[0],
+    types: types.slice(),
+    carb: val('re-carb') || 'moderate',
+    emoji: val('re-emoji') || '🍽',
+    tags, contains, focus,
+    img: img || null,
+    en: {
+      name: nameEn || nameZh,
+      time: val('re-time-en') || val('re-time-zh') || '',
+      servings: val('re-serv-en') || val('re-serv-zh') || '1',
+      why: val('re-why-en'),
+      ingredients: lines('re-ing-en').length ? lines('re-ing-en') : lines('re-ing-zh'),
+      steps: lines('re-steps-en').length ? lines('re-steps-en') : lines('re-steps-zh'),
+      notes: val('re-notes-en')
+    },
+    zh: {
+      name: nameZh || nameEn,
+      time: val('re-time-zh') || val('re-time-en') || '',
+      servings: val('re-serv-zh') || val('re-serv-en') || '1',
+      why: val('re-why-zh'),
+      ingredients: lines('re-ing-zh').length ? lines('re-ing-zh') : lines('re-ing-en'),
+      steps: lines('re-steps-zh').length ? lines('re-steps-zh') : lines('re-steps-en'),
+      notes: val('re-notes-zh')
+    },
+    macros: {
+      protein: { g:+val('re-p-g')||0, pct:+val('re-p-pct')||0 },
+      fat: { g:+val('re-f-g')||0, pct:+val('re-f-pct')||0 },
+      netCarbs: { g:+val('re-c-g')||0, pct:+val('re-c-pct')||0 }
+    }
+  };
+
+// Optional per-recipe calorie override. Blank → auto-calculate from macros.
+// Stored only when the user provides a value; otherwise omitted so the field
+// resets to the freshly-computed baseline on the next reload.
+const rawCal = val('re-cal');
+const calN = parseFloat(rawCal);
+const userClearedCalories = (rawCal === '' || isNaN(calN) || calN < 0);
+if(!userClearedCalories){
+  updated.calories = calN;
+} else {
+  delete updated.calories;
+}
+
+// Per-recipe micronutrient edits. We compare each input against what was
+// shown when the editor opened — only persist `micros` when something
+// actually changed, otherwise leave the override empty so the meal keeps
+// falling back to the MICROS defaults. Blank inputs are treated as a
+// deliberate "zero" and force the field into the override.
+const initialMicros = {}; // captured just before the editor rendered
+MICRO_KEYS.forEach(mk=>{
+  const v = (origMeal.micros && typeof origMeal.micros[mk] === 'number')
+    ? origMeal.micros[mk]
+    : (typeof MICROS !== 'undefined' && MICROS[origMeal.id] ? MICROS[origMeal.id][mk] : 0);
+  initialMicros[mk] = (typeof v === 'number') ? v : 0;
+});
+
+const microsEdits = {};
+let microChanged = false;
+let userClearedAnyMicro = false;
+MICRO_KEYS.forEach(mk=>{
+  const raw = val('re-micro-' + mk);
+  let cur;
+  if(raw === ''){
+    cur = 0;
+    userClearedAnyMicro = true;
+  } else {
+    const n = parseFloat(raw);
+    cur = isNaN(n) || n < 0 ? initialMicros[mk] : n;
+  }
+  if(Math.abs(cur - initialMicros[mk]) > 1e-6) microChanged = true;
+  microsEdits[mk] = cur;
+});
+if(microChanged){
+  updated.micros = microsEdits;
+} else {
+  delete updated.micros;
+}
+
+  const ud = loadUserData();
+
+  if(origMeal._custom || ud.custom.find(r=>r.id===origMeal.id)){
+    // Update custom recipe
+    const idx = ud.custom.findIndex(r=>r.id===origMeal.id);
+    if(idx >= 0){
+      ud.custom[idx] = { ...ud.custom[idx], ...updated };
+      if(userClearedCalories) delete ud.custom[idx].calories;
+      if(!microChanged) delete ud.custom[idx].micros;
+    } else {
+      const merged = { id: origMeal.id, ...updated };
+      if(userClearedCalories) delete merged.calories;
+      if(!microChanged) delete merged.micros;
+      ud.custom.push(merged);
+    }
+  } else {
+    // Override built-in recipe — spread over a fresh empty target so an empty
+    // override object doesn't leave the prior calories override around.
+    ud.overrides[origMeal.id] = userClearedCalories ? updated : { ...(ud.overrides[origMeal.id]||{}), ...updated };
+    if(userClearedCalories) delete ud.overrides[origMeal.id].calories;
+    if(!microChanged) delete ud.overrides[origMeal.id].micros;
+  }
+
+  saveUserData(ud);
+  rebuildMeals();
+  editingId = null;
+  renderLibModal();
+  renderAll();
+  toast(L.libSaved);
+}
+
+function deleteRecipe(id){
+  const L = t();
+  const ud = loadUserData();
+  const isCustom = ud.custom.find(r=>r.id===id);
+  if(isCustom){
+    ud.custom = ud.custom.filter(r=>r.id!==id);
+  } else {
+    ud.deleted.push(id);
+    delete ud.overrides[id];
+  }
+  saveUserData(ud);
+  rebuildMeals();
+  renderLibModal();
+  renderAll();
+  toast(L.libDeleted);
+}
+
+/* ============================================================
+   7-DAY MEAL PLAN GENERATOR
+   ============================================================ */
+function openWeekModal(){
+  renderWeekModal();
+  $('#weekModal').classList.add('open');
+}
+function closeWeekModal(){ $('#weekModal').classList.remove('open'); }
+
+function renderWeekModal(){
+  const L = t();
+  const dayLabels = L.weekDays;
+  // Always show grid — even when empty (Feature 1: empty cells with "+")
+  const MTYPES = WEEK_SLOTS.filter(mt=>weekState.mealTypes.includes(mt));
+  const usedSnackIds = weekState.days.map(()=>new Set());
+
+  // Build grid — ONE cell per (day, slot), with up to 2 meals (Feature 4: split view)
+  const gridHTML = MTYPES.map(mt=>{
+    const libType = SLOT_LIB_TYPE[mt] || mt;
+    const cells = weekState.days.map((dayArr,di)=>{
+      // Find entries of this slot type in day
+      const matchingEntries = dayArr.filter(e=>{
+        const m = byId(entryId(e));
+        return m && mealHasType(m, libType) && !usedSnackIds[di].has(m.id);
+      });
+      const isSnackSlot = SLOT_LIB_TYPE[mt] && SLOT_LIB_TYPE[mt]!==mt;
+      // Allow 2 meals per cell for all slots (including snacks)
+      const maxPerCell = 2;
+      const entries = matchingEntries.slice(0, maxPerCell);
+      entries.forEach(e=>usedSnackIds[di].add(entryId(e)));
+
+      if(!entries.length){
+        return `<div class="week-cell empty-cell" data-wday="${di}" data-wtype="${mt}">+</div>`;
+      }
+
+      // Render single or split view
+      const mealsHTML = entries.map((e,mi)=>{
+        const m = byId(entryId(e)); if(!m) return '';
+        const d = c(m);
+        const serv = entryServ(e);
+        const thumb = m.img
+          ? `<img src="${imgSrc(m)}" alt="" onerror="this.remove()">`
+          : `<span style="font-size:${entries.length>1?'22px':'28px'}">${m.emoji}</span>`;
+        const nameSize = entries.length>1 ? 'wc-name-sm' : '';
+        return `<div class="wc-meal" data-wmid="${m.id}" data-wentry="${mi}">
+          <div class="week-thumb" data-type="${m.type}">${thumb}</div>
+          <b class="wc-name ${nameSize}">${wrapName(d.name)}</b>
+          <div class="wc-serv-row">
+            <label>${L.weekServings}</label>
+            <input class="wc-serv-input" type="number" min="0.5" step="0.5" value="${serv}" data-wc-serv="${di}:${mt}:${mi}">
+          </div>
+          <button class="wc-x" data-wc-del="${di}:${mt}:${entryId(e)}">✕</button>
+          ${entries.length===1 ? `<button class="wc-add2nd" data-wc-add2="${di}:${mt}">+</button>` : ''}
+        </div>`;
+      }).join('');
+
+      const inner = entries.length>1 ? `<div class="wc-split">${mealsHTML}</div>` : mealsHTML;
+      return `<div class="week-cell" data-wday="${di}" data-wtype="${mt}" data-wmcount="${entries.length}">${inner}</div>`;
+    }).join('');
+    return `<div class="wg-row">
+      <div class="wg-label">${L.type[mt]}</div>
+      ${cells}
+    </div>`;
+  }).join('');
+
+  const dayHeaders = `<div class="wg-row">
+    <div class="wg-head"></div>
+    ${dayLabels.map((dl,di)=>{
+      return `<div class="wg-day-head">${esc(dl)}</div>`;
+    }).join('')}
+  </div>`;
+
+  // Totals row — macros always; micronutrients when enabled (Feature 6)
+  const totalsHTML = (() => {
+    const rows = ['protein','fat','netCarbs'].map(k=>{
+      const cells = weekState.days.map(dayArr=>{
+        const dm = dayMacros(dayArr);
+        const v = Math.round(dm[k]);
+        return `<div class="wdt-cell">${v}g</div>`;
+      }).join('');
+      const label = k==='protein'?L.protein : k==='fat'?L.fat : L.netCarbs;
+      return `<div class="wdt-row"><div class="wdt-label">${label}</div>${cells}</div>`;
+    });
+    const calCells = weekState.days.map(dayArr=>{
+      const dm = dayMacros(dayArr);
+      return `<div class="wdt-cell">${Math.round(dm.calories)}</div>`;
+    }).join('');
+    rows.push(`<div class="wdt-row"><div class="wdt-label">${L.weekCalories}</div>${calCells}</div>`);
+    // Micronutrient rows (Feature 6)
+    if(weekState.showMicros){
+      const microRows = weekState.microSelection.map(mk=>{
+        const cells = weekState.days.map(dayArr=>{
+          const dm = dayMicros(dayArr);
+          return `<div class="wdt-cell wdt-micro">${Math.round(dm[mk])}${L.microUnit[mk]}</div>`;
+        }).join('');
+        return `<div class="wdt-row wdt-micro"><div class="wdt-label">${L.microLabels[mk]}</div>${cells}</div>`;
+      });
+      rows.push(...microRows);
+    }
+    return `<div class="week-day-totals">
+      <div style="font-weight:600;font-size:10px;color:var(--brand-dark);margin-bottom:4px">${L.weekDayTotals}</div>
+      <div class="wdt-row wdt-thead"><div class="wdt-label"></div>${dayLabels.map(dl=>`<div class="wdt-cell wdt-thcell">${esc(dl)}</div>`).join('')}</div>
+      ${rows.join('')}
+    </div>`;
+  })();
+
+  // Config area — add micronutrient selector (Feature 6)
+  const cfgHTML = `
+    <div class="week-config">
+      <h2>${L.weekTitle}</h2>
+      <div class="cfg">
+        <label>${L.weekClientName}</label>
+        <input id="wk-client" value="${esc(weekState.clientName)}" placeholder="${L.weekClientPh}" style="width:130px">
+      </div>
+      <div class="cfg">
+        <label>${L.weekCarb}</label>
+        <select id="wk-carb">
+          <option value="any" ${weekState.carb==='any'?'selected':''}>${L.weekAny}</option>
+          <option value="low" ${weekState.carb==='low'?'selected':''}>${L.carbName.low}</option>
+          <option value="moderate" ${weekState.carb==='moderate'?'selected':''}>${L.carbName.moderate}</option>
+        </select>
+      </div>
+      <div class="cfg">
+        <label>${L.weekMealTypes}</label>
+        <div class="meal-types">
+          ${WEEK_SLOTS.map(mt=>`<label><input type="checkbox" data-wk-mt="${mt}" ${weekState.mealTypes.includes(mt)?'checked':''}>${L.type[mt]}</label>`).join('')}
+        </div>
+      </div>
+      <div class="cfg">
+        <label>${L.weekRepeatB}</label>
+        <select id="wk-repeat" style="width:110px">
+          <option value="natural" ${weekState.repeatStrategy==='natural'?'selected':''}>${L.weekStrategyA}</option>
+          <option value="different" ${weekState.repeatStrategy==='different'?'selected':''}>${L.weekStrategyB}</option>
+        </select>
+      </div>
+      <div class="cfg">
+        <label>${L.weekExport}</label>
+        <div class="meal-types">
+          <label><input type="checkbox" id="wk-showmacros" ${weekState.showMacros?'checked':''}>${L.weekShowMacros}</label>
+          <label><input type="checkbox" id="wk-inclrecipes" ${weekState.includeRecipes?'checked':''}>${L.weekIncludeRecipes}</label>
+          <label><input type="checkbox" id="wk-showmicros" ${weekState.showMicros?'checked':''}>${L.weekMicros}</label>
+        </div>
+      </div>
+      ${weekState.showMicros ? `<div class="cfg" style="flex-direction:column;align-items:stretch">
+        <label>${L.weekMicroDisplay}</label>
+        <div class="wk-micro-sel">
+          ${MICRO_KEYS.map(mk=>`<label><input type="checkbox" data-wk-micro="${mk}" ${weekState.microSelection.includes(mk)?'checked':''}>${L.microLabels[mk]}</label>`).join('')}
+        </div>
+      </div>` : ''}
+      <div class="cfg" style="flex-direction:column;align-items:stretch;max-width:100%">
+        <label>${L.weekNotesLabel}</label>
+        <textarea id="wk-notes" rows="2" placeholder="${L.weekNotesPh}" style="width:100%;max-width:460px;font-size:12px;padding:6px 8px;border:1px solid var(--line);border-radius:6px;resize:vertical">${esc(weekState.notes||'')}</textarea>
+      </div>
+    </div>
+  `;
+
+  // Focus/diet/avoid chips
+  const filterHTML = `
+    <div style="padding:10px 20px;border-bottom:1px solid var(--line);display:flex;gap:16px;flex-wrap:wrap">
+      <div><div class="ftitle" style="margin-bottom:5px">${L.weekFocus}</div>
+        <div class="tag-edit">${FOCUS_TAGS.map(x=>`<button class="chip ${weekState.focus.includes(x)?'on':''}" data-wk-focus="${x}">${L.tag[x]}</button>`).join('')}</div>
+      </div>
+      <div><div class="ftitle" style="margin-bottom:5px">${L.weekDiet}</div>
+        <div class="tag-edit">${DIET_TAGS.map(x=>`<button class="chip ${weekState.diet.includes(x)?'on':''}" data-wk-diet="${x}">${L.tag[x]}</button>`).join('')}</div>
+      </div>
+      <div><div class="ftitle" style="margin-bottom:5px">${L.weekAvoid}</div>
+        <div class="tag-edit">${AVOID_TAGS.map(x=>`<button class="chip ${weekState.avoid.includes(x)?'on warn':''}" data-wk-avoid="${x}">${L.contains[x]}</button>`).join('')}</div>
+      </div>
+    </div>
+  `;
+
+  // Always show grid (Feature 1)
+  $('#weekSheetModal').innerHTML = `
+    <button class="modal-close" data-week-close>✕</button>
+    ${cfgHTML}
+    ${filterHTML}
+    <div class="week-grid-wrap">
+      <div class="week-grid">${dayHeaders}${gridHTML}</div>
+      ${totalsHTML}
+      <div style="font-size:10px;color:var(--muted);padding:4px 0">${L.weekDragHint}</div>
+    </div>
+    <div class="week-actions">
+      <button class="btn" id="wk-save-plan">${L.weekSavePlan}</button>
+      <button class="btn" id="wk-load-plan">${L.weekLoadPlan}</button>
+      <button class="btn" id="wk-clear">${L.weekClear}</button>
+      <button class="btn primary" id="wk-generate">${L.weekGenerate}</button>
+      <button class="btn coral-btn" id="wk-export">${L.weekExport}</button>
+    </div>
+  `;
+
+  // Bind events
+  $$('#weekSheetModal [data-week-close]').forEach(b=>b.onclick=closeWeekModal);
+  $('#wk-generate').onclick = ()=>generateWeekPlan();
+  $('#wk-clear').onclick = ()=>{
+    weekState.days = [[],[],[],[],[],[],[]]; saveWeek(); renderWeekModal();
+    toast(L.weekCleared);
+  };
+  $('#wk-export').onclick = ()=>exportWeekPDF();
+  $('#wk-save-plan').onclick = ()=>showSavePlanBar();
+  $('#wk-load-plan').onclick = ()=>showPlansList();
+  const wkClient = $('#wk-client');
+  if(wkClient) wkClient.addEventListener('input', e=>{ weekState.clientName=e.target.value; saveWeek(); });
+  const wkCarb = $('#wk-carb');
+  if(wkCarb) wkCarb.addEventListener('change', e=>{ weekState.carb=e.target.value; saveWeek(); });
+  const wkRepeat = $('#wk-repeat');
+  if(wkRepeat) wkRepeat.addEventListener('change', e=>{ weekState.repeatStrategy=e.target.value; saveWeek(); });
+  const wkShowMacros = $('#wk-showmacros');
+  if(wkShowMacros) wkShowMacros.addEventListener('change', e=>{ weekState.showMacros=e.target.checked; saveWeek(); });
+  const wkInclRecipes = $('#wk-inclrecipes');
+  if(wkInclRecipes) wkInclRecipes.addEventListener('change', e=>{ weekState.includeRecipes=e.target.checked; saveWeek(); });
+  const wkShowMicros = $('#wk-showmicros');
+  if(wkShowMicros) wkShowMicros.addEventListener('change', e=>{ weekState.showMicros=e.target.checked; saveWeek(); renderWeekModal(); });
+  const wkNotes = $('#wk-notes');
+  if(wkNotes) wkNotes.addEventListener('input', e=>{ weekState.notes=e.target.value; saveWeek(); });
+
+  // Micronutrient selection toggles (Feature 6)
+  $$('#weekSheetModal [data-wk-micro]').forEach(cb=>{
+    cb.addEventListener('change', ()=>{
+      const mk = cb.dataset.wkMicro;
+      if(cb.checked && !weekState.microSelection.includes(mk)) weekState.microSelection.push(mk);
+      else weekState.microSelection = weekState.microSelection.filter(x=>x!==mk);
+      saveWeek(); renderWeekModal();
+    });
+  });
+
+  $$('#weekSheetModal [data-wk-mt]').forEach(cb=>{
+    cb.addEventListener('change', ()=>{
+      const mt = cb.dataset.wkMt;
+      if(cb.checked && !weekState.mealTypes.includes(mt)) weekState.mealTypes.push(mt);
+      else weekState.mealTypes = weekState.mealTypes.filter(x=>x!==mt);
+      saveWeek(); renderWeekModal();
+    });
+  });
+  const wkToggle = (attr, key) => {
+    $$('#weekSheetModal ['+attr+']').forEach(b=>b.onclick=()=>{
+      const v = b.getAttribute(attr);
+      weekState[key] = weekState[key].includes(v) ? weekState[key].filter(x=>x!==v) : [...weekState[key], v];
+      saveWeek(); renderWeekModal();
+    });
+  };
+  wkToggle('data-wk-focus','focus');
+  wkToggle('data-wk-diet','diet');
+  wkToggle('data-wk-avoid','avoid');
+
+  // Cell click - open picker (Feature 2: pass replace info for populated cells)
+  $$('#weekSheetModal .week-cell').forEach(cell=>{
+    cell.addEventListener('click', e=>{
+      if(e.target.closest('[data-wc-del]')) return;
+      if(e.target.closest('[data-wc-serv]')) return;
+      if(e.target.closest('[data-wc-add2]')) return;
+      const di = +cell.dataset.wday;
+      const mt = cell.dataset.wtype;
+      const mealCount = +cell.dataset.wmcount || 0;
+      // If cell has meals, pass replace mode for the first meal
+      if(mealCount > 0){
+        openWeekCellPicker(di, mt, {mode:'replace', entryIdx:0});
+      } else {
+        openWeekCellPicker(di, mt, {mode:'add'});
+      }
+    });
+  });
+
+  // Add second meal button (Feature 4)
+  $$('#weekSheetModal [data-wc-add2]').forEach(b=>{
+    b.onclick = e=>{
+      e.stopPropagation();
+      const [di, mt] = b.dataset.wcAdd2.split(':');
+      openWeekCellPicker(+di, mt, {mode:'add-second'});
+    };
+  });
+
+  // Serving size change (Feature 5) — update without full re-render
+  $$('#weekSheetModal [data-wc-serv]').forEach(inp=>{
+    inp.addEventListener('input', e=>{
+      const [di, mt, mi] = inp.dataset.wcServ.split(':');
+      const libType = SLOT_LIB_TYPE[mt] || mt;
+      const matching = weekState.days[+di].filter(ex=>{
+        const m = byId(entryId(ex));
+        return m && mealHasType(m, libType);
+      });
+      const entry = matching[+mi];
+      if(entry){
+        const val = parseFloat(e.target.value);
+        entry.servings = (isNaN(val) || val < 0.5) ? 1 : val;
+        saveWeek();
+        updateWeekTotalsOnly();
+      }
+    });
+  });
+
+  // Delete from cell (updated for new data model)
+  $$('#weekSheetModal [data-wc-del]').forEach(b=>{
+    b.onclick = e=>{
+      e.stopPropagation();
+      const [di, mt, mid] = b.dataset.wcDel.split(':');
+      weekState.days[+di] = weekState.days[+di].filter(ex=>entryId(ex)!==mid);
+      saveWeek(); renderWeekModal();
+    };
+  });
+
+  // Drag and drop (updated for new data model)
+  $$('#weekSheetModal .week-cell').forEach(cell=>{
+    cell.addEventListener('dragover', e=>{ e.preventDefault(); cell.classList.add('over'); });
+    cell.addEventListener('dragleave', ()=>cell.classList.remove('over'));
+    cell.addEventListener('drop', e=>{
+      e.preventDefault(); cell.classList.remove('over');
+      const data = e.dataTransfer.getData('text/plain');
+      const targetDay = +cell.dataset.wday;
+      if(data.startsWith('weekmove:')){
+        const [_, fromDay, fromType, mid] = data.split(':');
+        // Remove from source
+        weekState.days[+fromDay] = weekState.days[+fromDay].filter(ex=>entryId(ex)!==mid);
+        // Add to target
+        if(!weekState.days[targetDay].some(ex=>entryId(ex)===mid)) weekState.days[targetDay].push(mkEntry(mid));
+        saveWeek(); renderWeekModal();
+      } else {
+        // Adding from library
+        const mid = data;
+        if(!weekState.days[targetDay].some(ex=>entryId(ex)===mid)) weekState.days[targetDay].push(mkEntry(mid));
+        saveWeek(); renderWeekModal();
+      }
+    });
+  });
+  // Make meals draggable within grid
+  $$('#weekSheetModal .wc-meal').forEach(mealEl=>{
+    const cell = mealEl.closest('.week-cell');
+    mealEl.setAttribute('draggable','true');
+    mealEl.addEventListener('dragstart', e=>{
+      e.dataTransfer.setData('text/plain', `weekmove:${cell.dataset.wday}:${cell.dataset.wtype}:${mealEl.dataset.wmid}`);
+    });
+  });
+}
+
+// Update only the totals section (Feature 5: avoid losing input focus on serving size change)
+function updateWeekTotalsOnly(){
+  const L = t();
+  const totalsEl = $('#weekSheetModal .week-day-totals');
+  if(!totalsEl) return;
+  const rows = ['protein','fat','netCarbs'].map(k=>{
+    const cells = weekState.days.map(dayArr=>{
+      const dm = dayMacros(dayArr);
+      const v = Math.round(dm[k]);
+      return `<div class="wdt-cell">${v}g</div>`;
+    }).join('');
+    const label = k==='protein'?L.protein : k==='fat'?L.fat : L.netCarbs;
+    return `<div class="wdt-row"><div class="wdt-label">${label}</div>${cells}</div>`;
+  });
+  const calCells = weekState.days.map(dayArr=>{
+    const dm = dayMacros(dayArr);
+    return `<div class="wdt-cell">${Math.round(dm.calories)}</div>`;
+  }).join('');
+  rows.push(`<div class="wdt-row"><div class="wdt-label">${L.weekCalories}</div>${calCells}</div>`);
+  if(weekState.showMicros){
+    weekState.microSelection.forEach(mk=>{
+      const cells = weekState.days.map(dayArr=>{
+        const dm = dayMicros(dayArr);
+        return `<div class="wdt-cell wdt-micro">${Math.round(dm[mk])}${L.microUnit[mk]}</div>`;
+      }).join('');
+      rows.push(`<div class="wdt-row wdt-micro"><div class="wdt-label">${L.microLabels[mk]}</div>${cells}</div>`);
+    });
+  }
+  totalsEl.innerHTML = `<div style="font-weight:600;font-size:10px;color:var(--brand-dark);margin-bottom:4px">${L.weekDayTotals}</div>${rows.join('')}`;
+}
+
+function openWeekCellPicker(dayIdx, mealType, opts){
+  const L = t();
+  opts = opts || {mode:'add'};
+  const libType = SLOT_LIB_TYPE[mealType] || mealType;
+  const pool = ALL_MEALS.filter(m=>mealHasType(m, libType) && matches(m, weekState.carb, weekState.focus, weekState.diet, weekState.avoid));
+  if(!pool.length){ toast(L.tNoMatch); return; }
+
+  // Title depends on mode (Feature 2: replace vs add)
+  let title;
+  if(opts.mode === 'replace') title = L.weekReplaceMeal + ' — ' + L.type[mealType] + ' — ' + L.weekDays[dayIdx];
+  else if(opts.mode === 'add-second') title = L.weekAddSecond + ' — ' + L.type[mealType] + ' — ' + L.weekDays[dayIdx];
+  else title = L.type[mealType] + ' — ' + L.weekDays[dayIdx];
+
+  // Grid picker with large images
+  const grid = pool.slice(0, 24).map(m=>{
+    const d = c(m);
+    return `<div class="wk-pick-card" data-wk-pick="${m.id}">
+      <div class="wk-pick-thumb" data-type="${m.type}">
+        ${m.img ? `<img src="${imgSrc(m)}" alt="" onerror="this.remove()">` : `<span style="font-size:32px">${m.emoji}</span>`}
+      </div>
+      <div class="wk-pick-name">${esc(d.name)}</div>
+      <div class="wk-pick-meta">${esc(d.time)} · ${esc(d.servings)}${L.servingsUnit}</div>
+    </div>`;
+  }).join('');
+
+  $('#weekSheetModal').innerHTML = `
+    <button class="modal-close" data-week-close>✕</button>
+    <div style="padding:16px 20px">
+      <button class="wk-pick-back" data-wk-back>&#8592; ${L.weekBack}</button>
+      <h2 style="font-family:var(--font-heading);font-size:16px;margin-bottom:12px">${title}</h2>
+      <div class="wk-pick-grid">${grid || `<div class="empty">${L.empty}</div>`}</div>
+    </div>
+  `;
+
+  // Feature 3: close/back returns to week plan grid (NOT closeWeekModal)
+  $$('#weekSheetModal [data-week-close]').forEach(b=>b.onclick=()=>{ renderWeekModal(); });
+  $$('#weekSheetModal [data-wk-back]').forEach(b=>b.onclick=()=>{ renderWeekModal(); });
+
+  // Pick a meal — behavior depends on mode (Feature 2 + Feature 4)
+  $$('#weekSheetModal [data-wk-pick]').forEach(el=>el.onclick=()=>{
+    const mid = el.dataset.wkPick;
+    const dayArr = weekState.days[dayIdx];
+
+    if(opts.mode === 'replace'){
+      // Find the entry to replace (by type + index)
+      const libType2 = SLOT_LIB_TYPE[mealType] || mealType;
+      const matching = dayArr.filter(ex=>{
+        const m = byId(entryId(ex));
+        return m && mealHasType(m, libType2);
+      });
+      const targetEntry = matching[opts.entryIdx || 0];
+      if(targetEntry){
+        // Replace the ID but keep servings
+        targetEntry.id = mid;
+      } else {
+        dayArr.push(mkEntry(mid));
+      }
+      saveWeek(); renderWeekModal();
+    } else if(opts.mode === 'add-second'){
+      // Add as second meal (only if not already present)
+      if(!dayArr.some(ex=>entryId(ex)===mid)) dayArr.push(mkEntry(mid));
+      saveWeek(); renderWeekModal();
+    } else {
+      // Default add mode
+      if(!dayArr.some(ex=>entryId(ex)===mid)) dayArr.push(mkEntry(mid));
+      saveWeek(); renderWeekModal();
+    }
+  });
+}
+
+function generateWeekPlan(){
+  const L = t();
+  const pool = ALL_MEALS.filter(m=>matches(m, weekState.carb, weekState.focus, weekState.diet, weekState.avoid));
+  if(!pool.length){ toast(L.tNoMatch); return; }
+
+  const days = [[],[],[],[],[],[],[]];
+  const mTypes = WEEK_SLOTS.filter(mt=>weekState.mealTypes.includes(mt));
+  const natural = weekState.repeatStrategy === 'natural';
+
+  // For each meal slot, pick recipes and distribute
+  mTypes.forEach((mt, mtIdx)=>{
+    const libType = SLOT_LIB_TYPE[mt] || mt;
+    const candidates = pool.filter(m=>mealHasType(m, libType));
+    if(!candidates.length) return;
+    // Shuffle
+    const shuffled = candidates.slice();
+    for(let i=shuffled.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [shuffled[i],shuffled[j]]=[shuffled[j],shuffled[i]]; }
+    // Offset into shuffled list so different snack slots pick different meals on the same day
+    const off = mtIdx;
+
+    if(natural && mt === 'breakfast'){
+      const b1 = shuffled[(0+off)%shuffled.length].id;
+      const b2 = shuffled[(1+off)%shuffled.length].id;
+      const b3 = shuffled[(2+off)%shuffled.length].id;
+      [b1,b1,b1,b2,b2,b2,b3].forEach((id,di)=> days[di].push(mkEntry(id)));
+    } else if(natural && (mt === 'lunch' || mt === 'dinner')){
+      const x1 = shuffled[(0+off)%shuffled.length].id;
+      const x2 = shuffled[(1+off)%shuffled.length].id;
+      const x3 = shuffled[(2+off)%shuffled.length].id;
+      const x4 = shuffled[(3+off)%shuffled.length].id;
+      [x1,x1,x2,x2,x3,x3,x4].forEach((id,di)=> days[di].push(mkEntry(id)));
+    } else if(natural){
+      // All snack variants (incl. morning/afternoon/night)
+      const s1 = shuffled[(0+off)%shuffled.length].id;
+      const s2 = shuffled[(1+off)%shuffled.length].id;
+      const s3 = shuffled[(2+off)%shuffled.length].id;
+      [s1,s1,s1,s2,s2,s2,s3].forEach((id,di)=> days[di].push(mkEntry(id)));
+    } else {
+      // Different daily: pick 7 different (or as many as available)
+      const picks = shuffled.slice(0, Math.min(7, shuffled.length)).map(m=>m.id);
+      while(picks.length < 7) picks.push(shuffled[Math.floor(Math.random()*shuffled.length)].id);
+      picks.forEach((id,di)=> days[di].push(mkEntry(id)));
+    }
+  });
+
+  weekState.days = days;
+  saveWeek();
+  renderWeekModal();
+  toast(L.weekGenerated);
+}
+
+function exportWeekPDF(){
+  const L = t();
+  if(!weekState.days.some(d=>d.length)){ toast(L.weekNeedGen); return; }
+  const en = state.lang === 'en';
+  const name = weekState.clientName || (state.clientName || L.defaultClient);
+  const MTYPES = WEEK_SLOTS.filter(mt=>weekState.mealTypes.includes(mt));
+  const dayLabels = L.weekDays;
+  const showMacros = weekState.showMacros;
+  const showMicros = weekState.showMicros;
+  const microSel = weekState.microSelection || MICRO_KEYS;
+
+  const dayHeaders = `<div class="ws-row"><div class="ws-dh"></div>${dayLabels.map(dl=>`<div class="ws-dh">${esc(dl)}</div>`).join('')}</div>`;
+
+  // Dedup helper: each day's first snack slot wins so a meal doesn't appear in 3 columns
+  const usedSnackPdf = weekState.days.map(()=>new Set());
+  const rows = MTYPES.map(mt=>{
+    const libType = SLOT_LIB_TYPE[mt] || mt;
+    const cells = weekState.days.map((dayArr,di)=>{
+      // Find matching entries (new data model: {id, servings} objects)
+      const matchingEntries = dayArr.filter(e=>{
+        const m = byId(entryId(e));
+        return m && mealHasType(m, libType) && !usedSnackPdf[di].has(m.id);
+      });
+      const isSnackSlot = SLOT_LIB_TYPE[mt] && SLOT_LIB_TYPE[mt]!==mt;
+      const maxPerCell = 2;
+      const entries = matchingEntries.slice(0, maxPerCell);
+      entries.forEach(e=>usedSnackPdf[di].add(entryId(e)));
+      if(!entries.length) return `<div class="ws-cell"></div>`;
+
+      // Render single or split view (Feature 4: split view in PDF)
+      const mealsHTML = entries.map(e=>{
+        const m = byId(entryId(e)); if(!m) return '';
+        const d = c(m);
+        const serv = entryServ(e);
+        const servLabel = serv !== 1 ? ` <span class="ws-serv">(${serv} ${L.weekServings})</span>` : '';
+        const mc = showMacros && m.macros ? `<div class="ws-mm">P${Math.round(m.macros.protein.g*serv)} F${Math.round(m.macros.fat.g*serv)} C${Math.round(m.macros.netCarbs.g*serv)} ${Math.round(macroCalories(m, serv))}${L.weekCalories}</div>` : '';
+        const img = m.img ? `<div class="ws-img"><img src="${imgSrc(m)}" alt="" onerror="this.remove()"></div>` : `<div class="ws-img"><span class="ph-emoji">${m.emoji}</span></div>`;
+        return `<div class="ws-m-item">${img}<div class="ws-mn">${wrapName(d.name)}${servLabel}</div>${mc}</div>`;
+      }).join('');
+
+      if(entries.length > 1){
+        return `<div class="ws-cell ws-split">${mealsHTML}</div>`;
+      }
+      return `<div class="ws-cell">${mealsHTML}</div>`;
+    }).join('');
+    return `<div class="ws-row"><div class="ws-ml">${L.type[mt]}</div>${cells}</div>`;
+  }).join('');
+
+  // Totals — macros always; micronutrients when enabled (Feature 6)
+  const totRows = ['protein','fat','netCarbs'].map(k=>{
+    const cells = weekState.days.map(dayArr=>{
+      const dm = dayMacros(dayArr);
+      const v = Math.round(dm[k]);
+      return `<div class="ws-tcell">${v}g</div>`;
+    }).join('');
+    const label = k==='protein'?L.weekProtein : k==='fat'?L.weekFat : L.weekCarbs;
+    return `<div class="ws-trow"><div class="ws-tlabel">${label}</div>${cells}</div>`;
+  }).join('');
+  const calCells = weekState.days.map(dayArr=>{
+    const dm = dayMacros(dayArr);
+    return `<div class="ws-tcell">${Math.round(dm.calories)}</div>`;
+  }).join('');
+  // Day-of-week header row for the totals section (Task 11)
+  const totDayHeader = `<div class="ws-trow ws-thead"><div class="ws-tlabel"></div>${dayLabels.map(dl=>`<div class="ws-thcell">${esc(dl)}</div>`).join('')}</div>`;
+  let totRowsAll = totDayHeader + totRows + `<div class="ws-trow"><div class="ws-tlabel">${L.weekCalories}</div>${calCells}</div>`;
+  // Micronutrient rows in PDF (Feature 6)
+  if(showMicros){
+    microSel.forEach(mk=>{
+      const cells = weekState.days.map(dayArr=>{
+        const dm = dayMicros(dayArr);
+        return `<div class="ws-tcell">${Math.round(dm[mk])}${L.microUnit[mk]}</div>`;
+      }).join('');
+      totRowsAll += `<div class="ws-trow"><div class="ws-tlabel">${L.microLabels[mk]}</div>${cells}</div>`;
+    });
+  }
+
+  // Notes section
+  const notesHTML = weekState.notes && weekState.notes.trim()
+    ? `<div class="ws-notes"><div class="ws-notes-title">${L.weekNotesLabel}</div><div class="ws-notes-body">${esc(weekState.notes.trim())}</div></div>`
+    : '';
+
+  // Recipes section (optional) — use entryId for dedup
+  const allMealIds = [...new Set(weekState.days.flat().map(e=>entryId(e)))];
+  const recipesHTML = weekState.includeRecipes && allMealIds.length
+    ? `<div class="ws-recipes-start"></div>
+       <div class="ws-recipes-title">${L.hRecipes}</div>
+       <div class="ws-recipes-grid">${allMealIds.map(id=>{
+         const m = byId(id); if(!m) return '';
+         const d = c(m);
+         const macroLine = m.macros ? `<div class="ws-r-macros">
+           <span>${L.protein}: <b>${m.macros.protein.g}${L.grams}</b></span>
+           <span>${L.fat}: <b>${m.macros.fat.g}${L.grams}</b></span>
+           <span>${L.carbs}: <b>${m.macros.netCarbs.g}${L.grams}</b></span>
+           <span>${L.calories}: <b>${Math.round(macroCalories(m))}</b></span>
+         </div>` : '';
+         const rPhoto = m.img
+           ? `<div class="ws-r-photo"><img src="${imgSrc(m)}" alt="" onerror="this.parentElement.style.display='none'"></div>`
+           : `<div class="ws-r-photo ph"><span>${m.emoji}</span></div>`;
+         return `<div class="ws-recipe">
+           ${rPhoto}
+           <div class="ws-r-head">
+             <h4>${esc(d.name)}</h4>
+             <div class="ws-r-meta">${L.type[m.type]} · ${esc(d.time)} · ${esc(d.servings)}${L.servingsUnit}</div>
+           </div>
+           <div class="ws-r-cols">
+             <div><div class="ws-r-sec">${L.ingredients}</div><ul class="ws-r-ing">${d.ingredients.map(i=>`<li>${esc(i)}</li>`).join('')}</ul></div>
+             <div><div class="ws-r-sec">${L.method}</div><ol class="ws-r-steps">${d.steps.map(s=>`<li>${esc(s)}</li>`).join('')}</ol></div>
+           </div>
+           ${macroLine}
+         </div>`;
+       }).join('')}</div>`
+    : '';
+
+  const sheetContent = `
+    <div class="ws-head">
+      ${brandLogoHTMLSmall('ws-logo')}
+      <div class="ws-brand-text">
+        <div class="pn">${L.practiceName}</div>
+      </div>
+      <div style="flex:1;text-align:right">
+        <div class="ws-title">${L.weekTitle2}</div>
+        <div class="ws-sub">${L.weekSubtitle(esc(name))}</div>
+      </div>
+    </div>
+    <div class="ws-grid">
+      ${dayHeaders}
+      ${rows}
+    </div>
+    <div class="ws-totals">
+      <div class="ws-totals-title">${L.weekDayTotals}</div>
+      ${totRowsAll}
+    </div>
+    ${notesHTML}
+    ${recipesHTML}
+    <div class="ws-foot">${L.practiceName} · ${L.credential}</div>`;
+
+  // Open a dedicated print window — avoids CSS mode-switching conflicts
+  const w = window.open('', '_blank');
+  if(!w){ toast(L.tPopup); return; }
+  const css = document.querySelector('style').textContent;
+  w.document.write(`<!DOCTYPE html><html lang="${document.documentElement.lang}"><head><meta charset="UTF-8"><base href="${location.href}">
+    <title>${L.weekTitle2}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;500;600;700&family=Source+Sans+Pro:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>${css}
+    @page{ size:letter landscape; margin:6mm; }
+    body{background:#fff;margin:0;padding:4px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    #weekSheet{display:block !important;font-family:var(--font-body)}
+    .screen-only,#handout,#recipeSheet{display:none !important}
+    /* weekSheet base styles */
+    .ws-head{display:flex;align-items:center;gap:12px;padding-bottom:6px;margin-bottom:6px;border-bottom:2.5px solid var(--brand-coral)}
+    .ws-logo{flex:none}.ws-logo img{height:40px;width:auto}
+    .ws-brand-text .pn{font-size:15px;color:var(--brand-coral);font-weight:600;font-family:var(--font-heading)}
+    .ws-title{font-size:20px;font-family:var(--font-heading);color:var(--brand-dark);margin:2px 0 1px}
+    .ws-sub{font-size:11px;color:var(--muted)}
+    .ws-grid{display:grid;gap:2px;width:100%;margin-top:6px}
+    .ws-row{display:grid;grid-template-columns:26px repeat(7,1fr);gap:2px}
+    .ws-dh{font-size:12px;font-weight:700;color:var(--brand-dark);text-align:center;padding:3px;border-bottom:2px solid var(--brand-cream);font-family:var(--font-heading)}
+    .ws-ml{font-size:10px;text-transform:uppercase;letter-spacing:.3px;color:var(--muted);font-weight:600;writing-mode:vertical-rl;transform:rotate(180deg);display:flex;align-items:center;justify-content:center;padding:2px 0;height:100%}
+    .ws-cell{border:1px solid var(--line);border-radius:4px;padding:4px;min-height:156px;font-size:12px;line-height:1.3;overflow:hidden;display:flex;flex-direction:column}
+    .ws-cell .ws-img{position:relative;flex:1 1 0;min-height:0;overflow:hidden;border-radius:4px;margin-bottom:4px;display:grid;place-items:center}
+    .ws-cell .ws-img img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+    .ws-cell .ws-img .ph-emoji{font-size:28px}
+    .ws-cell .ws-mn{font-weight:700;color:var(--brand-dark);margin-bottom:2px;font-size:12px;line-height:1.25;flex-shrink:0}
+    .ws-cell .ws-mn .wl{display:block}
+    .ws-cell .ws-mm{font-size:10px;color:var(--muted);line-height:1.2;flex-shrink:0}
+    /* Single-meal cell: ensure the item fills the cell and the image has a real height */
+    #weekSheet .ws-cell:not(.ws-split){min-height:156px}
+    #weekSheet .ws-cell:not(.ws-split) > .ws-m-item{display:flex;flex-direction:column;flex:1;min-height:0}
+    #weekSheet .ws-cell:not(.ws-split) > .ws-m-item .ws-img{flex:1 1 0;min-height:90px}
+    /* Split view: two meals side-by-side — prefixed with #weekSheet to override
+       the @media print block's #weekSheet .ws-cell{flex-direction:column} rule
+       which would otherwise stack the two items vertically. */
+    #weekSheet .ws-cell.ws-split{flex-direction:row !important;gap:3px;flex-wrap:nowrap}
+    #weekSheet .ws-cell.ws-split .ws-m-item{flex:1 1 0;min-width:0;display:flex;flex-direction:column}
+    #weekSheet .ws-cell.ws-split .ws-m-item .ws-img{min-height:50px}
+    #weekSheet .ws-cell.ws-split .ws-m-item .ws-mn{font-size:11px;word-break:break-word}
+    .ws-serv{font-size:10px;font-weight:400;color:var(--muted)}
+    /* Totals — 2x font size, starts on a fresh page */
+    .ws-totals{margin-top:0;padding-top:18px;font-size:24px;break-before:page;page-break-before:always}
+    .ws-totals-title{font-weight:700;color:var(--brand-coral);margin-bottom:10px;font-size:26px;font-family:var(--font-heading)}
+    .ws-totals .ws-trow{display:grid;grid-template-columns:120px repeat(7,1fr);gap:6px}
+    .ws-totals .ws-tlabel{font-weight:700;color:var(--brand-dark);padding:8px;font-size:22px}
+    .ws-totals .ws-tcell{text-align:center;padding:8px;color:var(--muted);font-size:22px}
+    .ws-totals .ws-thead .ws-thcell{text-align:center;padding:6px 4px;font-size:18px;font-weight:700;color:var(--brand-coral);font-family:var(--font-heading);border-bottom:2px solid var(--brand-cream);margin-bottom:4px}
+    /* Notes section */
+    .ws-notes{margin-top:20px;padding:16px;border:1px solid var(--brand-cream);border-radius:8px;background:#faf9f6}
+    .ws-notes-title{font-weight:700;font-size:20px;color:var(--brand-dark);font-family:var(--font-heading);margin-bottom:8px}
+    .ws-notes-body{font-size:18px;line-height:1.6;color:#4a544e;white-space:pre-wrap}
+    /* Recipes section - 2 per row */
+    .ws-recipes-start{break-before:page;page-break-before:always}
+    .ws-recipes-title{font-size:24px;font-family:var(--font-heading);color:var(--brand-coral);margin:0 0 12px;padding-bottom:6px;border-bottom:2px solid var(--brand-coral);break-after:avoid;page-break-after:avoid}
+    .ws-recipes-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .ws-recipe{break-inside:avoid;page-break-inside:avoid;border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-bottom:0}
+    .ws-r-photo{float:right;width:145px;height:92px;object-fit:cover;border-radius:8px;overflow:hidden;margin-left:10px;margin-bottom:8px}
+    .ws-r-photo img{width:100%;height:100%;object-fit:cover}
+    .ws-r-photo.ph{display:grid;place-items:center;background:var(--brand-cream);font-size:44px}
+    .ws-r-head{overflow:hidden}
+    .ws-r-head h4{font-size:28px;font-family:var(--font-heading);color:var(--brand-dark);margin:0 0 4px;line-height:1.25}
+    .ws-r-meta{font-size:20px;color:var(--muted);font-weight:400;margin-bottom:5px}
+    .ws-r-cols{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:9px;clear:both}
+    .ws-r-cols>div{margin-bottom:0}
+    .ws-r-sec{font-size:19px;font-weight:600;color:var(--brand-dark);margin-bottom:5px;text-transform:uppercase;letter-spacing:.3px}
+    .ws-r-ing{font-size:21px;line-height:1.4;margin:0;padding-left:18px;list-style:disc}
+    .ws-r-ing li{padding:3px 0}
+    .ws-r-steps{font-size:21px;line-height:1.4;margin:0;padding-left:24px;list-style:decimal}
+    .ws-r-steps li{padding:0 0 7px}
+    .ws-r-macros{margin-top:8px;display:flex;gap:10px;font-size:20px;color:var(--muted);flex-wrap:wrap}
+    .ws-r-macros b{color:var(--brand-dark);font-weight:700}
+    .ws-r-notes{margin-top:9px;font-size:14px;color:var(--muted);line-height:1.4}
+    .ws-foot{margin-top:20px;padding-top:10px;border-top:1px solid var(--brand-cream);font-size:11px;color:var(--muted);text-align:center}
+    </style></head><body><div id="weekSheet">${sheetContent}</div></body></html>`);
+  w.document.close();
+  w.focus();
+  setTimeout(()=>{ w.print(); }, 800);
+}
+
+/* ---------- Saved plan library UI ---------- */
+function showSavePlanBar(){
+  const L = t();
+  // Remove any existing save bar
+  const existing = $('#wk-save-bar');
+  if(existing){ existing.remove(); return; }
+  const bar = document.createElement('div');
+  bar.id = 'wk-save-bar';
+  bar.className = 'wk-save-bar';
+  const defaultName = weekState.clientName
+    ? `${weekState.clientName} - ${new Date().toLocaleDateString()}`
+    : `Plan - ${new Date().toLocaleDateString()}`;
+  bar.innerHTML = `
+    <input type="text" id="wk-plan-name" placeholder="${L.weekPlanNamePh}" value="${esc(defaultName)}">
+    <button class="btn primary" id="wk-plan-save-btn">${L.weekSavePlan}</button>
+    <button class="btn" id="wk-plan-cancel-btn">${L.weekClose}</button>
+  `;
+  const actions = $('#weekSheetModal .week-actions');
+  if(actions) actions.parentNode.insertBefore(bar, actions);
+  const input = $('#wk-plan-name');
+  if(input){ input.focus(); input.select(); }
+  $('#wk-plan-save-btn').onclick = ()=>{
+    const name = input.value.trim();
+    if(!name){ toast(L.weekPlanNameReq); return; }
+    saveCurrentPlan(name);
+    bar.remove();
+    toast(L.weekPlanSaved);
+  };
+  $('#wk-plan-cancel-btn').onclick = ()=>{ bar.remove(); };
+  input.addEventListener('keydown', e=>{
+    if(e.key === 'Enter'){ e.preventDefault(); $('#wk-plan-save-btn').click(); }
+    if(e.key === 'Escape'){ bar.remove(); }
+  });
+}
+
+function showPlansList(){
+  const L = t();
+  const plans = loadSavedPlans();
+  // Remove existing overlay
+  const existing = $('#wk-plans-overlay');
+  if(existing){ existing.remove(); return; }
+  const overlay = document.createElement('div');
+  overlay.id = 'wk-plans-overlay';
+  overlay.className = 'wk-plans-overlay';
+  const plansHTML = plans.length === 0
+    ? `<div class="wk-plans-empty">${L.weekNoSavedPlans}</div>`
+    : plans.slice().reverse().map(p=>{
+        const dt = new Date(p.savedAt || p.id);
+        const dateStr = dt.toLocaleDateString() + ' ' + dt.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+        const clientName = p.data && p.data.clientName ? ` · ${esc(p.data.clientName)}` : '';
+        return `<div class="wk-plan-item">
+          <div class="wk-plan-info">
+            <div class="wk-plan-name">${esc(p.name)}${clientName}</div>
+            <div class="wk-plan-date">${dateStr}</div>
+          </div>
+          <div class="wk-plan-actions">
+            <button class="btn-sm primary" data-plan-load="${esc(p.name)}">${L.weekLoadPlan}</button>
+            <button class="btn-sm danger" data-plan-del="${esc(p.name)}">${L.weekDeletePlan}</button>
+          </div>
+        </div>`;
+      }).join('');
+  overlay.innerHTML = `
+    <div class="wk-plans-modal">
+      <div class="wk-plans-head">
+        <h3>${L.weekSavedPlans}</h3>
+        <button class="modal-close" id="wk-plans-close">✕</button>
+      </div>
+      <div class="wk-plans-body">${plansHTML}</div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  $('#wk-plans-close').onclick = ()=>overlay.remove();
+  overlay.addEventListener('click', e=>{ if(e.target === overlay) overlay.remove(); });
+  $$('#wk-plans-overlay [data-plan-load]').forEach(b=>{
+    b.onclick = ()=>{
+      const name = b.dataset.planLoad;
+      if(loadPlanIntoState(name)){
+        overlay.remove();
+        renderWeekModal();
+        toast(L.weekPlanLoaded);
+      }
+    };
+  });
+  $$('#wk-plans-overlay [data-plan-del]').forEach(b=>{
+    b.onclick = ()=>{
+      const name = b.dataset.planDel;
+      deleteSavedPlan(name);
+      overlay.remove();
+      showPlansList();
+      toast(L.weekPlanDeleted);
+    };
+  });
+}
+
+/* ---------- 事件绑定 ---------- */
+function bindLibrary(){
+  $$('#libGrid [data-add]').forEach(b=>b.onclick=()=>addToDay(b.dataset.add, state.addDay));
+  $$('#libGrid [data-rec]').forEach(b=>b.onclick=()=>openRecipe(b.dataset.rec));
+  $$('#planBody [data-rec]').forEach(b=>b.onclick=()=>openRecipe(b.dataset.rec));
+  $$('#libGrid .meal').forEach(card=>{
+    card.setAttribute('draggable','true');
+    card.addEventListener('dragstart', e=>{
+      e.dataTransfer.setData('text/plain', card.querySelector('[data-add]').dataset.add);
+    });
+  });
+}
+
+function bindGlobal(){
+  $('#carbSeg').addEventListener('click', e=>{
+    const b = e.target.closest('button'); if(!b) return;
+    state.carb = b.dataset.carb; save(); renderAll();
+  });
+  const toggle = (evt, attr, key) => {
+    const b = evt.target.closest('['+attr+']'); if(!b) return;
+    const v = b.getAttribute(attr);
+    state[key] = state[key].includes(v) ? state[key].filter(x=>x!==v) : [...state[key], v];
+    save(); renderAll();
+  };
+  $('#focusChips').addEventListener('click', e=>toggle(e,'data-focus','focus'));
+  $('#dietChips').addEventListener('click',  e=>toggle(e,'data-diet','diet'));
+  $('#avoidChips').addEventListener('click', e=>toggle(e,'data-avoid','avoid'));
+
+  $('#typeTabs').addEventListener('click', e=>{
+    const b = e.target.closest('button'); if(!b) return;
+    state.type = b.dataset.type; save(); renderAll();
+  });
+  $('#daySeg').addEventListener('click', e=>{
+    const b = e.target.closest('button'); if(!b) return;
+    state.addDay = +b.dataset.day; save(); renderAll();
+  });
+
+  $('#btnAuto').onclick = ()=>autoFill(state.addDay);
+  $('#btnLib').onclick = ()=>openLibModal();
+  $('#btnWeek').onclick = ()=>openWeekModal();
+
+  $('#clientName').addEventListener('input', e=>{ state.clientName=e.target.value; save(); buildHandout(); });
+  $('#clientNote').addEventListener('input', e=>{ state.clientNote=e.target.value; save(); buildHandout(); });
+  $('#optRecipes').addEventListener('change', e=>{ state.includeRecipes=e.target.checked; save(); buildHandout(); });
+  $('#optMacros').addEventListener('change', e=>{ state.showMacros=e.target.checked; save(); buildHandout(); });
+
+  $('#btnLang').onclick = ()=>{
+    state.lang = state.lang === 'zh' ? 'en' : 'zh';
+    save(); renderAll();
+    toast(t().tLang);
+  };
+
+  $('#btnDemo').onclick = ()=>{ applyDemo(); save(); renderAll(); toast(t().tDemo); };
+  $('#btnPdf').onclick = exportPDF;
+  $('#btnPreview').onclick = ()=>{
+    const L = t();
+    if(!state.day1.length && !state.day2.length && !state.day3.length){ toast(L.tNeedMeal); return; }
+    buildHandout();
+    const w = window.open('', '_blank');
+    if(!w){ toast(L.tPopup); return; }
+    const css = document.querySelector('style').textContent;
+    w.document.write(`<!DOCTYPE html><html lang="${document.documentElement.lang}"><head><meta charset="UTF-8"><title>${L.previewTitle}</title>
+      <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;500;600;700&family=Source+Sans+Pro:wght@300;400;600;700&display=swap" rel="stylesheet">
+      <style>${css}
+      body{background:#f6f5f1;padding:0}
+      #handout{display:block !important;background:#fff;max-width:820px;margin:22px auto;padding:34px 38px;border-radius:12px;box-shadow:0 10px 40px rgba(0,0,0,.1)}
+    </style></head><body><div id="handout">${$('#handout').innerHTML}</div></body></html>`);
+    w.document.close();
+  };
+  $('#btnReset').onclick = ()=>{
+    state.day1=[]; state.day2=[]; state.day3=[]; save(); renderAll(); toast(t().tCleared);
+  };
+
+  $$('#modal [data-close]').forEach(b=>b.onclick=closeModal);
+  $$('#libModal [data-lib-close]').forEach(b=>b.onclick=closeLibModal);
+  $$('#weekModal [data-week-close]').forEach(b=>b.onclick=closeWeekModal);
+  document.addEventListener('keydown', e=>{ if(e.key==='Escape'){ closeModal(); closeLibModal(); closeWeekModal(); } });
+}
+
+/* ---------- 启动 ---------- */
+load();
+loadWeek();
+const qs = new URLSearchParams(location.search);
+if(qs.has('lang')){
+  const q = qs.get('lang');
+  if(q === 'zh' || q === 'en') state.lang = q;
+}
+if(qs.has('demo')) applyDemo();
+renderAll();
+bindGlobal();
+</script>
+</body>
+</html>
+          <textarea id="re-steps-zh" style="min-height:100px
